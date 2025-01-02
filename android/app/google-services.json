@@ -1,0 +1,162 @@
+{
+  "project_info": {
+    "project_number": "488495063024",
+    "project_id": "minecoinaryan",
+    "storage_bucket": "minecoinaryan.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:488495063024:android:88eb4efbc310e8f3bd4735",
+        "android_client_info": {
+          "package_name": "com.renzov.MinecoinApp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "488495063024-4brsf8uvk0vs6sp9fcmogg0q4cleuakq.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.renzov.MinecoinApp",
+            "certificate_hash": "dba117b6c678369d9dbe5ee8f311d8c6daf81d30"
+          }
+        },
+        {
+          "client_id": "488495063024-bosfrp01gcsc1lgigi3vbeomm1efj8lf.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.renzov.MinecoinApp",
+            "certificate_hash": "f63c21661af14e0246c01f350237640a9f9bbc09"
+          }
+        },
+        {
+          "client_id": "488495063024-c228asek6q68to2c366nr74gihu1c43j.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.renzov.MinecoinApp",
+            "certificate_hash": "c0ecb543e6457e7dbd9670c0905147c4f1434c5f"
+          }
+        },
+        {
+          "client_id": "488495063024-vbfqn9gf8un922jjabc64amr36r9hb4b.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.renzov.MinecoinApp",
+            "certificate_hash": "8bf9aeffc89449565697c01afd791984bafd1f4f"
+          }
+        },
+        {
+          "client_id": "488495063024-sr6ml5ii2cek1nnvo6ca5ttl2ce3225d.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDKp35UKpnlAsOG70zFz-pSZU3x61EW8Bo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "488495063024-sr6ml5ii2cek1nnvo6ca5ttl2ce3225d.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "488495063024-dkbf710h58m28f7t2afqp9illuj08rov.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.renzov.xgamingapp"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:488495063024:android:f653a9f44c98974bbd4735",
+        "android_client_info": {
+          "package_name": "com.renzov.xgamingapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "488495063024-1b7buoo4nmcsqmrie4d5ndudsrgas6n2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.renzov.xgamingapp",
+            "certificate_hash": "5c84abb48a621d165fbb5174523e69a772071a07"
+          }
+        },
+        {
+          "client_id": "488495063024-1rmrpctbsh36n37h1jat2reh3f9c0uhs.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.renzov.xgamingapp",
+            "certificate_hash": "f63c21661af14e0246c01f350237640a9f9bbc09"
+          }
+        },
+        {
+          "client_id": "488495063024-9e2j8mie93jl7fcbiur233pjc8takg1o.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.renzov.xgamingapp",
+            "certificate_hash": "dba117b6c678369d9dbe5ee8f311d8c6daf81d30"
+          }
+        },
+        {
+          "client_id": "488495063024-bm7dh7pkcrrv6lriqehn1e0gh2m2rhv9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.renzov.xgamingapp",
+            "certificate_hash": "8bf9aeffc89449565697c01afd791984bafd1f4f"
+          }
+        },
+        {
+          "client_id": "488495063024-s2nmqmanfctha5b7aue6f6ngis66d87l.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.renzov.xgamingapp",
+            "certificate_hash": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+          }
+        },
+        {
+          "client_id": "488495063024-sr1d9eht04dll7dt09fuo1mkn7m0r8ug.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.renzov.xgamingapp",
+            "certificate_hash": "c0ecb543e6457e7dbd9670c0905147c4f1434c5f"
+          }
+        },
+        {
+          "client_id": "488495063024-sr6ml5ii2cek1nnvo6ca5ttl2ce3225d.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDKp35UKpnlAsOG70zFz-pSZU3x61EW8Bo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "488495063024-sr6ml5ii2cek1nnvo6ca5ttl2ce3225d.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "488495063024-dkbf710h58m28f7t2afqp9illuj08rov.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.renzov.xgamingapp"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

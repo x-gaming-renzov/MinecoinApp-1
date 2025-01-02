@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "XGaming",
+    "slug": "xgaming",
+    "plugins": [
+      "@react-native-google-signin/google-signin"
+    ],
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/xg_logo.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.renzov.xgamingapp"
+    },
+    "android": {
+      "googleServicesFile": "./android/app/google-services.json",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/xg_logo.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.renzov.xgamingapp"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "3ac160fc-5429-4e92-910a-34390162a354"
+      }
+    },
+    "owner": "abheetsingh"
+  }
+}
