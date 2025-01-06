@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Header from '../components/common/Header';
 import GameCard from '../components/games/GameCard';
 import { fetchGameAssets } from '../config/firebase';
+import { useUser } from '../context/UserContext';
 
 const MainScreen = () => {
   const { width } = Dimensions.get('window');
@@ -13,6 +14,13 @@ const MainScreen = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [gameAssets, setGameAssets] = useState([]);
+  // NEW: Get balance from UserContext
+  const { balance } = useUser();
+
+  // NEW: Add useEffect to monitor balance changes
+  useEffect(() => {
+    console.log("Balance updated:", balance);
+  }, [balance]);
 
   useEffect(() => {
     const loadGameAssets = async () => {
@@ -44,7 +52,7 @@ const MainScreen = () => {
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <Header />
+        <Header balance={balance} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#7C3AED" />
           <Text style={styles.loadingText}>Loading game assets...</Text>
@@ -56,7 +64,7 @@ const MainScreen = () => {
   if (error) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <Header />
+        <Header balance={balance} />
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{error}</Text>
         </View>
@@ -66,7 +74,7 @@ const MainScreen = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <Header />
+      <Header balance={balance} />
       <Animated.View 
         style={[
           styles.titleWrapper,
@@ -166,7 +174,7 @@ const styles = StyleSheet.create({
   },
   gamesGrid: {
     alignItems: 'center',
-    gap: 16, // Consistent gap between cards
+    gap: 16,
   },
   cardContainer: {
     width: '100%',

@@ -84,6 +84,8 @@ const CoinBundleScreen = () => {
   const [selectedProductId, setSelectedProductId] = useState(null);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  // NEW: Add state to track if a transaction was just completed
+  const [transactionCompleted, setTransactionCompleted] = useState(false);
 
   useEffect(() => {
     const fetchCoinBundles = async () => {
@@ -106,11 +108,19 @@ const CoinBundleScreen = () => {
 
   const handlePurchaseSuccess = async (coinBundle) => {
     await addCoins(coinBundle.coinAmount, coinBundle);
+    // NEW: Set transaction completed flag
+    setTransactionCompleted(true);
     setToastMessage(`${coinBundle.coinAmount} coins have been added to your account!`);
     setToastVisible(true);
   };
 
   const handlePurchase = async () => {
+    // NEW: Prevent purchase if transaction was just completed
+    if (transactionCompleted) {
+      setError('Please return to main screen before making another purchase.');
+      return;
+    }
+
     if (!hasMcVerified) {
       setError('Minecraft verification required to proceed.');
       return;
@@ -132,13 +142,14 @@ const CoinBundleScreen = () => {
             setSelectedProductId(product.vendorProductId);
           },
           onPurchaseCompleted: async (purchaseResult) => {
-            // // Move error check outside try block
+            // Move error check outside try block
             // if (purchaseResult.error || purchaseResult.status === 'error' || purchaseResult.errorCode === 'ALREADY_OWNED') {
             //   setError('You already own this item.');
             //   setSelectedProductId(null);
-            //   return; // This properly stops execution
-            // }            
-              try {
+            //   return;
+            // }
+
+            try {
               const nonSubscriptions = purchaseResult?.nonSubscriptions;
           
               if (!nonSubscriptions || Object.keys(nonSubscriptions).length === 0) {
@@ -230,8 +241,19 @@ const CoinBundleScreen = () => {
           {loading ? (
             <ActivityIndicator size="large" color="#6C47FF" style={styles.loader} />
           ) : (
-            <TouchableOpacity style={styles.bundleButton} onPress={handlePurchase}>
-              <Text style={styles.bundleButtonText}>View Coin Bundles</Text>
+            <TouchableOpacity 
+              style={[
+                styles.bundleButton,
+                // NEW: Add opacity when button is disabled
+                transactionCompleted && { opacity: 0.5 }
+              ]} 
+              onPress={handlePurchase}
+              // NEW: Disable button if transaction was completed
+              disabled={transactionCompleted}
+            >
+              <Text style={styles.bundleButtonText}>
+                {transactionCompleted ? 'Purchase Complete' : 'View Coin Bundles'}
+              </Text>
             </TouchableOpacity>
           )}
 
@@ -255,6 +277,7 @@ const CoinBundleScreen = () => {
     </SafeAreaView>
   );
 };
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,

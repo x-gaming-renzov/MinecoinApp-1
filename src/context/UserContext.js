@@ -44,8 +44,10 @@ export const UserProvider = ({ children }) => {
     if (isLoggedIn && user && mcCredentials.username) {
       console.log("Setting up real-time player data sync");
       const playerRef = doc(db, "players", mcCredentials.username);
+      const userRef = doc(db, "users", user.email);
       
-      const unsubscribe = onSnapshot(playerRef, (doc) => {
+      // NEW: Setup parallel listeners for both player and user data
+      const playerUnsubscribe = onSnapshot(playerRef, async (doc) => {
         if (doc.exists()) {
           const playerData = doc.data();
           setLinkedPlayer(prev => ({
@@ -59,10 +61,21 @@ export const UserProvider = ({ children }) => {
             ip: playerData.ip,
             UUID: playerData.UUID,
           }));
+          
+          // NEW: Sync user balance when player balance changes
+          if (playerData.coinBalance !== undefined) {
+            setBalance(playerData.coinBalance);
+            // Update user document to keep in sync
+            await updateDoc(userRef, {
+              coinBalance: playerData.coinBalance
+            });
+          }
         }
       });
-
-      return () => unsubscribe();
+  
+      return () => {
+        playerUnsubscribe();
+      };
     }
   }, [isLoggedIn, user, mcCredentials.username]);
   
