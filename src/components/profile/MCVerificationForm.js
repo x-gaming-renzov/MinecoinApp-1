@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, KeyboardAvoidingView, Platform, ActivityIndicator } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import { Check, User, Lock, AlertCircle } from "lucide-react-native";
@@ -38,7 +38,6 @@ const ValidationMessage = ({ message, type }) => (
       styles.validationText,
       type === 'error' ? styles.errorText : styles.successText
     ]}>
-
       {message}
     </Text>
   </View>
@@ -48,8 +47,8 @@ const MCVerificationForm = () => {
   const navigation = useNavigation();
   const { user } = useAuth();
   const { updateMcCredentials, loadFirestoreData } = useUser();
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Initial form state with all UI and validation states
   const [formState, setFormState] = useState({
     credentials: {
       username: "",
@@ -69,38 +68,38 @@ const MCVerificationForm = () => {
     }
   });
 
-  // Check stored credentials on component mount
   useEffect(() => {
-    checkStoredCredentials();
-  }, []);
-
-  // Function to check if user already has stored MC credentials
-  const checkStoredCredentials = async () => {
-    try {
-      const userRef = doc(db, "users", user.email);
-      const userDoc = await getDoc(userRef);
-      
-      if (userDoc.exists() && userDoc.data().mcUsername) {
-        setFormState(prev => ({
-          ...prev,
-          credentials: {
-            username: userDoc.data().mcUsername,
-            password: userDoc.data().mcPassword
-          },
-          uiState: {
-            ...prev.uiState,
-            hasStoredCredentials: true,
-            isEditing: false,
-            verificationComplete: true
-          }
-        }));
+    const checkStoredCredentials = async () => {
+      setIsLoading(true);
+      try {
+        const userRef = doc(db, "users", user.email);
+        const userDoc = await getDoc(userRef);
+        
+        if (userDoc.exists() && userDoc.data().mcUsername) {
+          setFormState(prev => ({
+            ...prev,
+            credentials: {
+              username: userDoc.data().mcUsername,
+              password: userDoc.data().mcPassword
+            },
+            uiState: {
+              ...prev.uiState,
+              hasStoredCredentials: true,
+              isEditing: false,
+              verificationComplete: true
+            }
+          }));
+        }
+      } catch (error) {
+        console.error("Error checking credentials:", error);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error("Error checking credentials:", error);
-    }
-  };
+    };
 
-  // Verify player credentials against Firestore
+    checkStoredCredentials();
+  }, [user.email]);
+
   const verifyPlayerCredentials = async (username, password, isEditing = false) => {
     try {
       const playerRef = doc(db, "players", username);
@@ -120,7 +119,6 @@ const MCVerificationForm = () => {
     }
   };
 
-  // Handle form submission
   const handleSubmit = async () => {
     if (formState.uiState.isSubmitting) return;
 
@@ -132,7 +130,6 @@ const MCVerificationForm = () => {
     try {
       const { username, password } = formState.credentials;
 
-      // Verify player credentials
       const playerData = await verifyPlayerCredentials(
         username.trim(),
         password.trim(),
@@ -151,7 +148,6 @@ const MCVerificationForm = () => {
         return;
       }
 
-      // Update credentials and sync balance
       const success = await updateMcCredentials(
         username.trim(),
         password.trim(),
@@ -159,7 +155,6 @@ const MCVerificationForm = () => {
       );
 
       if (success) {
-        // First update UI state
         setFormState(prev => ({
           ...prev,
           uiState: {
@@ -171,7 +166,6 @@ const MCVerificationForm = () => {
           }
         }));
 
-        // Then reload user data after UI update
         await loadFirestoreData();
       } else {
         setFormState(prev => ({
@@ -195,7 +189,6 @@ const MCVerificationForm = () => {
     }
   };
 
-  // Close modal handler
   const handleModalClose = () => {
     setFormState(prev => ({
       ...prev,
@@ -209,7 +202,14 @@ const MCVerificationForm = () => {
     }));
   };
 
-  // If the user has verified credentials and is not editing, show "Account Verified" screen
+  if (isLoading) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color="#7C3AED" />
+      </View>
+    );
+  }
+
   if (formState.uiState.verificationComplete && !formState.uiState.isEditing) {
     return (
       <View style={styles.container}>
@@ -236,8 +236,7 @@ const MCVerificationForm = () => {
     );
   }
 
-  // NEW PART: define editableUsername to avoid an undefined variable
-  const editableUsername = !formState.uiState.hasStoredCredentials; 
+  const editableUsername = !formState.uiState.hasStoredCredentials;
 
   return (
     <KeyboardAvoidingView
@@ -278,11 +277,10 @@ const MCVerificationForm = () => {
                     errors: { ...prev.validation.errors, username: "" }
                   }
                 }))}
-                editable={editableUsername}  // NEW PART
+                editable={editableUsername}
                 autoCapitalize="none"
               />
-              {/* Show lock icon if username is NOT editable */}
-              {!editableUsername && (  // NEW PART
+              {!editableUsername && (
                 <Lock size={20} color="#9CA3AF" style={styles.lockIcon} />
               )}
             </View>

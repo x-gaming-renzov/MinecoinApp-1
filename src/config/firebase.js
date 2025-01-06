@@ -13,6 +13,7 @@ const firebaseConfig = {
   appId: "1:488495063024:web:6a42aa1d523ee45bba99d5"
 };
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = initializeAuth(app, {
   persistence: getReactNativePersistence(AsyncStorage)
@@ -23,27 +24,40 @@ const configureGoogleSignIn = () => {
   console.log("Configuring Google Sign In...");
   GoogleSignin.configure({
     webClientId: "488495063024-sr6ml5ii2cek1nnvo6ca5ttl2ce3225d.apps.googleusercontent.com",
-    scopes: ["email", "profile"],
+    offlineAccess: true,
+    scopes: ["email", "profile"]
   });
   console.log("Google Sign In configured successfully");
 };
 
 const signInWithGoogle = async () => {
   try {
-    console.log("Checking Play Services...");
+    console.log("Starting Google Sign In process");
+    
+    // Check Play Services
     await GoogleSignin.hasPlayServices();
-    console.log("Getting user info from Google Sign In...");
+    
+    // Sign in to Google
     const userInfo = await GoogleSignin.signIn();
-    console.log("User info received:", userInfo);
-    console.log("Creating credential...");
-    const credential = GoogleAuthProvider.credential(userInfo.data.idToken);
-    console.log("Credential created successfully");
-    console.log("Signing in with credential...");
+    console.log("Google Sign In successful, getting tokens");
+    
+    // Get tokens
+    const { accessToken, idToken } = await GoogleSignin.getTokens();
+    if (!idToken) {
+      throw new Error('No ID token present!');
+    }
+    
+    // Create credential
+    const credential = GoogleAuthProvider.credential(idToken, accessToken);
+    console.log("Credential created, signing in to Firebase");
+    
+    // Sign in to Firebase
     const result = await signInWithCredential(auth, credential);
-    console.log("Sign in successful:", result.user.email);
+    console.log("Firebase sign in successful:", result.user.email);
+    
     return result;
   } catch (error) {
-    console.error("Detailed sign-in error:", {
+    console.error("Google Sign In error:", {
       code: error.code,
       message: error.message,
       nativeError: error.nativeErrorMessage,
@@ -53,7 +67,6 @@ const signInWithGoogle = async () => {
   }
 };
 
-// UPDATED: Initialize new user with transactions array
 const saveUserToFirestore = async (user) => {
   try {
     console.log("Starting Firestore save for:", user.email);
@@ -64,10 +77,10 @@ const saveUserToFirestore = async (user) => {
       photoURL: user.photoURL,
       coinBalance: 0,
       purchasedAssets: [],
-      transactions: [], // NEW: Added transactions array
+      transactions: [],
       hasMcVerified: false,
       mcUsername: "",
-      fcmToken: user.fcmToken  // NEW: Added FCM token field
+      fcmToken: user.fcmToken
     });
     console.log("Firestore save completed");
   } catch (error) {
@@ -76,7 +89,6 @@ const saveUserToFirestore = async (user) => {
   }
 };
 
-// NEW: Added function to update FCM token
 const updateFCMToken = async (email, token) => {
   try {
     const userRef = doc(db, "users", email);
@@ -90,7 +102,6 @@ const updateFCMToken = async (email, token) => {
   }
 };
 
-// NEW: Add function to get user data
 const getUserData = async (email) => {
   try {
     const userRef = doc(db, "users", email);
@@ -120,16 +131,24 @@ const fetchGameAssets = async () => {
   }
 };
 
-// NEW: Add function to fetch coin bundles
 const fetchCoinBundles = async () => {
   try {
     console.log("Fetching coin bundles...");
     const bundlesRef = collection(db, "coinBundles");
     const snapshot = await getDocs(bundlesRef);
-    return snapshot.docs.map(doc => ({
+    
+    if (snapshot.empty) {
+      console.log("No coin bundles found");
+      return [];
+    }
+
+    const bundles = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
+
+    console.log(`Successfully fetched ${bundles.length} coin bundles`);
+    return bundles;
   } catch (error) {
     console.error("Error fetching coin bundles:", error);
     throw error;
@@ -138,47 +157,50 @@ const fetchCoinBundles = async () => {
 
 const syncPlayerUserBalance = async (email, username, amount) => {
   try {
-    console.log("Syncing balance for user and player:", email, username);
+    console.log("Syncing balance for:", email, username);
     
     const userRef = doc(db, "users", email);
     const playerRef = doc(db, "players", username);
     
-    // Update balance in both users and players collection
     await Promise.all([
       updateDoc(playerRef, { coinBalance: amount }),
-      updateDoc(userRef, { coinBalance: amount })  // Sync user balance
+      updateDoc(userRef, { coinBalance: amount })
     ]);
     
-    console.log("Balance synced successfully for user and player");
+    console.log("Balance sync successful");
     return amount;
-  } catch (error) {   // ✅ Correct placement inside the function scope
-    console.error("Error syncing player and user balance:", error);
+  } catch (error) {
+    console.error("Error syncing balance:", error);
     throw error;
   }
 };
 
-// Define and export updateUserBalance
 const updateUserBalance = async (email, amount) => {
-  const userRef = doc(db, "users", email);
-  await updateDoc(userRef, { coinBalance: amount });
-  console.log("User balance updated successfully.");
+  try {
+    const userRef = doc(db, "users", email);
+    await updateDoc(userRef, { coinBalance: amount });
+    console.log("Balance updated successfully");
+  } catch (error) {
+    console.error("Error updating balance:", error);
+    throw error;
+  }
 };
 
 const updateMcUsername = async (email, username, password) => {
   try {
-    console.log("Updating MC username and password for:", email);
+    console.log("Updating MC credentials for:", email);
     const userRef = doc(db, "users", email);
 
     await updateDoc(userRef, {
       mcUsername: username,
-      mcPassword: password, // NEW: Adding password to Firestore
+      mcPassword: password,
       hasMcVerified: true,
     });
 
-    console.log("MC username and password updated successfully");
+    console.log("MC credentials updated successfully");
     return true;
   } catch (error) {
-    console.error("Error updating MC username and password:", error);
+    console.error("Error updating MC credentials:", error);
     throw error;
   }
 };
@@ -202,12 +224,13 @@ const savePurchaseHistory = async (email, purchaseDetails) => {
 
 const signOutUser = async () => {
   try {
-    console.log("Signing out...");
+    console.log("Starting sign out process");
+    await GoogleSignin.revokeAccess();
     await GoogleSignin.signOut();
     await signOut(auth);
     console.log("Sign out successful");
   } catch (error) {
-    console.error("Sign-out error:", error);
+    console.error("Sign out error:", error);
     throw error;
   }
 };
@@ -222,9 +245,9 @@ export {
   fetchGameAssets,
   syncPlayerUserBalance,
   savePurchaseHistory,
-  updateMcUsername, // UPDATED: Updated function to handle password
-  getUserData, 
+  updateMcUsername,
+  getUserData,
   fetchCoinBundles,
-  updateUserBalance,  // Export updateUserBalance
-  updateFCMToken,  // NEW: Added to exports
+  updateUserBalance,
+  updateFCMToken,
 };

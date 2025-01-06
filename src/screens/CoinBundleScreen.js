@@ -1,65 +1,224 @@
-//CoinBundleScreen.js
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Modal, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { adapty } from 'react-native-adapty';
+import { createPaywallView } from '@adapty/react-native-ui';
 import { useAuth } from '../context/AuthContext';
 import { useUser } from '../context/UserContext';
-import { fetchCoinBundles } from '../config/firebase';
-import CoinBundleCard from '../components/coins/CoinBundleCard';
-import GoogleSignInButton from '../components/common/GoogleSignInButton';
 import { ArrowLeft } from "lucide-react-native";
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../config/firebase';
+import Animated, { 
+  withSpring, 
+  useAnimatedStyle, 
+  useSharedValue,
+  withTiming
+} from 'react-native-reanimated';
+
+const PLACEMENT_ID = '2233';
+
+const Toast = ({ message, visible, onHide, onComplete }) => {
+  const translateY = useSharedValue(-100);
+  const opacity = useSharedValue(0);
+
+  useEffect(() => {
+    if (visible) {
+      translateY.value = withSpring(0);
+      opacity.value = withSpring(1);
+      
+      const timer = setTimeout(() => {
+        translateY.value = withTiming(-100);
+        opacity.value = withTiming(0);
+        onHide();
+        onComplete?.();
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [visible]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+    opacity: opacity.value,
+  }));
+
+  if (!visible) return null;
+
+  return (
+    <Animated.View style={[{
+      position: 'absolute',
+      top: 60,
+      left: '5%',
+      right: '5%',
+      backgroundColor: '#1B1D2E',
+      borderRadius: 12,
+      padding: 16,
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 4,
+      elevation: 5,
+      zIndex: 1000,
+    }, animatedStyle]}>
+      <Text style={{
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: '600',
+        textAlign: 'center'
+      }}>
+        {message}
+      </Text>
+    </Animated.View>
+  );
+};
 
 const CoinBundleScreen = () => {
   const navigation = useNavigation();
-  const { isLoggedIn, signInWithGoogle } = useAuth();
-  const { addCoins } = useUser();
-
-  const [showSignIn, setShowSignIn] = useState(false);
-  const [selectedBundle, setSelectedBundle] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [bundles, setBundles] = useState([]);
+  const { isLoggedIn } = useAuth();
+  const { hasMcVerified, addCoins } = useUser();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [coinBundles, setCoinBundles] = useState([]);
+  const [selectedProductId, setSelectedProductId] = useState(null);
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
   useEffect(() => {
-    loadBundles();
+    const fetchCoinBundles = async () => {
+      try {
+        const bundlesRef = collection(db, "coinBundles");
+        const snapshot = await getDocs(bundlesRef);
+        const bundles = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setCoinBundles(bundles);
+      } catch (error) {
+        console.error("Error fetching coin bundles:", error);
+        setError("Failed to load coin bundle information");
+      }
+    };
+
+    fetchCoinBundles();
   }, []);
 
-  const loadBundles = async () => {
+  const handlePurchaseSuccess = async (coinBundle) => {
+    await addCoins(coinBundle.coinAmount, coinBundle);
+    setToastMessage(`${coinBundle.coinAmount} coins have been added to your account!`);
+    setToastVisible(true);
+  };
+
+  const handlePurchase = async () => {
+    if (!hasMcVerified) {
+      setError('Minecraft verification required to proceed.');
+      return;
+    }
+
     try {
-      const bundlesData = await fetchCoinBundles();
-      setBundles(bundlesData);
-    } catch (error) {
-      console.error('Failed to load bundles:', error);
+      setLoading(true);
+      setError(null);
+      const paywall = await adapty.getPaywall(PLACEMENT_ID, 'en');
+
+      if (paywall.hasViewConfiguration) {
+        const view = await createPaywallView(paywall);
+
+        view.registerEventHandlers({
+          onClose: () => {
+            setSelectedProductId(null);
+          },
+          onProductSelected: (product) => {
+            setSelectedProductId(product.vendorProductId);
+          },
+          onPurchaseCompleted: async (purchaseResult) => {
+            // // Move error check outside try block
+            // if (purchaseResult.error || purchaseResult.status === 'error' || purchaseResult.errorCode === 'ALREADY_OWNED') {
+            //   setError('You already own this item.');
+            //   setSelectedProductId(null);
+            //   return; // This properly stops execution
+            // }            
+              try {
+              const nonSubscriptions = purchaseResult?.nonSubscriptions;
+          
+              if (!nonSubscriptions || Object.keys(nonSubscriptions).length === 0) {
+                throw new Error('No non-subscription purchases found.');
+              }
+          
+              let latestPurchase = null;
+          
+              for (const [productId, purchases] of Object.entries(nonSubscriptions)) {
+                purchases.forEach((purchase) => {
+                  const purchaseTime = new Date(purchase.purchasedAt).getTime();
+                  if (!latestPurchase || purchaseTime > new Date(latestPurchase.purchasedAt).getTime()) {
+                    latestPurchase = purchase;
+                  }
+                });
+              }
+          
+              if (!latestPurchase) {
+                throw new Error('No valid purchases found.');
+              }
+          
+              const productId = latestPurchase.vendorProductId;
+              const bundlesRef = collection(db, "coinBundles");
+              const snapshot = await getDocs(bundlesRef);
+          
+              if (snapshot.empty) {
+                throw new Error('No coin bundles found.');
+              }
+          
+              const coinBundles = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+              }));
+          
+              const coinBundle = coinBundles.find(bundle => bundle.productId === productId);
+          
+              if (!coinBundle) {
+                throw new Error('Product not found in bundles');
+              }
+          
+              await handlePurchaseSuccess(coinBundle);
+            } catch (error) {
+              console.error('Error processing purchase:', error);
+              setError('Failed to credit coins. Please try again.');
+            }
+          },             
+          onPurchaseCancelled: () => {
+            setSelectedProductId(null);
+          },
+          onPurchaseError: (err) => {
+            setError('Purchase could not be completed. Please try again.');
+            setSelectedProductId(null);
+          },
+        });
+
+        await view.present();
+      } else {
+        setError('No coin bundles available at the moment.');
+      }
+    } catch (e) {
+      setError('Failed to load coin bundles. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handlePurchase = (bundle) => {
-    if (!isLoggedIn) {
-      setSelectedBundle(bundle);
-      setShowSignIn(true);
-    } else {
-      navigation.navigate('Checkout', { bundle });
-    }
-  };
-
-  const handleSignIn = async () => {
-    const success = await signInWithGoogle();
-    if (success && selectedBundle) {
-      setShowSignIn(false);
-      navigation.navigate('Checkout', { bundle: selectedBundle });
-    }
-  };
-
   return (
     <SafeAreaView style={styles.container}>
+      <Toast 
+        message={toastMessage}
+        visible={toastVisible}
+        onHide={() => setToastVisible(false)}
+        onComplete={() => navigation.navigate('Main')}
+      />
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.backButton}
         >
-          <ArrowLeft size={24} color="#7C3AED" />
+          <ArrowLeft size={24} color="#6C47FF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Get Coins</Text>
       </View>
@@ -67,17 +226,13 @@ const CoinBundleScreen = () => {
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.contentContainer}>
           <Text style={styles.subtitle}>Select coin bundle to purchase</Text>
-          
+
           {loading ? (
-            <ActivityIndicator size="large" color="#7C3AED" style={styles.loader} />
+            <ActivityIndicator size="large" color="#6C47FF" style={styles.loader} />
           ) : (
-            <View style={styles.bundlesList}>
-              {bundles.map((bundle) => (
-                <View key={bundle.id}>
-                  <CoinBundleCard bundle={bundle} onPurchase={handlePurchase} />
-                </View>
-              ))}
-            </View>
+            <TouchableOpacity style={styles.bundleButton} onPress={handlePurchase}>
+              <Text style={styles.bundleButtonText}>View Coin Bundles</Text>
+            </TouchableOpacity>
           )}
 
           <View style={styles.infoContainer}>
@@ -91,38 +246,15 @@ const CoinBundleScreen = () => {
               • For any issues, please contact support
             </Text>
           </View>
+
+          {error && (
+            <Text style={styles.errorText}>{error}</Text>
+          )}
         </View>
       </ScrollView>
-
-      <Modal
-        visible={showSignIn}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowSignIn(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Sign In Required</Text>
-            <Text style={styles.modalText}>
-              Please sign in to continue your purchase
-            </Text>
-            <GoogleSignInButton
-              onPress={handleSignIn}
-              style={styles.signInButton}
-            />
-            <TouchableOpacity
-              onPress={() => setShowSignIn(false)}
-              style={styles.cancelButton}
-            >
-              <Text style={styles.cancelText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -148,65 +280,49 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 16,
+    alignItems: 'center',
   },
   subtitle: {
     fontSize: 20,
     fontWeight: '500',
     color: '#1F2937',
     marginBottom: 24,
+    textAlign: 'center',
   },
-  bundlesList: {
-    gap: 16,
+  bundleButton: {
+    backgroundColor: '#6C47FF',
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    marginBottom: 32,
+    width: '90%',
+    alignItems: 'center',
+  },
+  bundleButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   loader: {
-    marginVertical: 32,
+    marginVertical: 20,
   },
   infoContainer: {
-    marginTop: 32,
-    gap: 12,
+    width: '90%',
+    marginTop: 24,
+    backgroundColor: '#2A2D3F',
+    padding: 20,
+    borderRadius: 12,
   },
   infoText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#94A3B8',
+    marginBottom: 16,
     lineHeight: 20,
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
-  },
-  modalContent: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 24,
-    width: '90%',
-    maxWidth: 340,
-    alignItems: 'center',
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 8,
-  },
-  modalText: {
-    fontSize: 16,
-    color: '#6B7280',
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  signInButton: {
-    width: '100%',
-    marginBottom: 12,
-  },
-  cancelButton: {
-    padding: 8,
-  },
-  cancelText: {
-    color: '#6B7280',
-    fontSize: 16,
+  errorText: {
+    color: '#EF4444',
+    fontSize: 14,
+    marginTop: 20,
   },
 });
 

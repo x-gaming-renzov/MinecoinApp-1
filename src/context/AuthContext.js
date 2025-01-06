@@ -7,10 +7,9 @@ import {
   signOutUser as firebaseSignOutUser,
   saveUserToFirestore,
   getUserData,
-  updateFCMToken  // NEW: Import updateFCMToken
+  updateFCMToken
 } from "../config/firebase";
 
-// NEW: Import notification services
 import { 
   requestNotificationPermission, 
   getFCMToken, 
@@ -26,10 +25,8 @@ export const AuthProvider = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
   const [hasMcVerification, setHasMcVerification] = useState(false);
-  // NEW: Add FCM token state
   const [fcmToken, setFcmToken] = useState("");
 
-  // NEW: Setup notifications function
   const setupNotifications = async (userEmail) => {
     try {
       const hasPermission = await requestNotificationPermission();
@@ -42,10 +39,7 @@ export const AuthProvider = ({ children }) => {
           }
         }
 
-        // Setup notification handlers
         const notificationUnsubscribe = setupNotificationHandlers();
-        
-        // Setup token refresh listener
         const tokenUnsubscribe = await setupTokenRefreshListener(userEmail);
 
         return () => {
@@ -64,7 +58,7 @@ export const AuthProvider = ({ children }) => {
     restoreUser();
   }, []);
 
-  // Function to restore user session
+  // NEW: Enhanced restoreUser function with better error handling
   const restoreUser = async () => {
     try {
       console.log("Attempting to restore user session");
@@ -72,6 +66,13 @@ export const AuthProvider = ({ children }) => {
       if (userData) {
         console.log("Found stored user data");
         const parsedUser = JSON.parse(userData);
+        
+        // NEW: Added additional validation
+        if (!parsedUser.email) {
+          console.error("Invalid stored user data");
+          await AsyncStorage.removeItem("user");
+          return;
+        }
         
         console.log("Fetching fresh data from Firestore for:", parsedUser.email);
         const firestoreData = await getUserData(parsedUser.email);
@@ -88,15 +89,18 @@ export const AuthProvider = ({ children }) => {
           setHasMcVerification(firestoreData.hasMcVerified || false);
           
           await AsyncStorage.setItem("user", JSON.stringify(updatedUser));
-          
-          // NEW: Setup notifications for restored user
           setupNotifications(updatedUser.email);
+        } else {
+          console.log("No Firestore data found for user");
+          await AsyncStorage.removeItem("user");
         }
       } else {
         console.log("No stored user session found");
       }
     } catch (error) {
       console.error("Error restoring user:", error);
+      // NEW: Clear storage on error
+      await AsyncStorage.removeItem("user");
     }
   };
 
@@ -105,14 +109,13 @@ export const AuthProvider = ({ children }) => {
       console.log("Starting Google Sign In process");
       const userCredential = await firebaseSignInWithGoogle();
       
-      // NEW: Get FCM token during sign in
       const token = await getFCMToken();
       
       const userData = {
         email: userCredential.user.email,
         displayName: userCredential.user.displayName,
         photoURL: userCredential.user.photoURL,
-        fcmToken: token  // NEW: Include FCM token in user data
+        fcmToken: token
       };
       console.log("Google Sign In successful:", userData.email);
 
@@ -138,7 +141,6 @@ export const AuthProvider = ({ children }) => {
       setIsLoggedIn(true);
       setHasMcVerification(firestoreData?.hasMcVerified || false);
       
-      // NEW: Setup notifications after successful sign in
       setupNotifications(userData.email);
       
       console.log("Sign in process completed");
@@ -149,18 +151,18 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // NEW: Enhanced signOut function with cleanup
   const signOut = async () => {
     try {
       console.log("Starting sign out process");
       await firebaseSignOutUser();
-      console.log("Clearing local storage");
-      await AsyncStorage.clear();
       
-      console.log("Resetting auth states");
+      // NEW: Clear all user-related data
+      await AsyncStorage.clear();
       setUser(null);
       setIsLoggedIn(false);
       setHasMcVerification(false);
-      setFcmToken(""); // NEW: Clear FCM token state
+      setFcmToken("");
       
       console.log("Sign out completed successfully");
     } catch (error) {
@@ -177,7 +179,7 @@ export const AuthProvider = ({ children }) => {
         hasMcVerification,
         signInWithGoogle,
         signOut,
-        fcmToken,  // NEW: Expose FCM token through context
+        fcmToken,
       }}
     >
       {children}

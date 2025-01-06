@@ -13,20 +13,13 @@ const ProfileScreen = () => {
   const navigation = useNavigation();
   const { isLoggedIn, signInWithGoogle, user } = useAuth();
   const [activeTab, setActiveTab] = useState("MC Verification");
-  const tabs = ["MC Verification", "Transaction History", "User Details"];
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case "MC Verification":
-        return <MCVerificationForm />;
-      case "Transaction History":
-        return <TransactionList />;
-      case "User Details":
-        return <UserDetailsForm />;
-      default:
-        return null;
-    }
-  };
+  // Keep all components mounted but control visibility
+  const tabs = [
+    { id: "MC Verification", component: <MCVerificationForm /> },
+    { id: "Transaction History", component: <TransactionList /> },
+    { id: "User Details", component: <UserDetailsForm /> }
+  ];
 
   if (!isLoggedIn) {
     return (
@@ -92,27 +85,31 @@ const ProfileScreen = () => {
         <View style={styles.tabContainer}>
           {tabs.map((tab) => (
             <TouchableOpacity
-              key={tab}
+              key={tab.id}
               style={[
                 styles.tab,
-                activeTab === tab && styles.activeTab,
+                activeTab === tab.id && styles.activeTab,
               ]}
-              onPress={() => setActiveTab(tab)}
+              onPress={() => setActiveTab(tab.id)}
             >
               <Text
                 style={[
                   styles.tabText,
-                  activeTab === tab && styles.activeTabText,
+                  activeTab === tab.id && styles.activeTabText,
                 ]}
               >
-                {tab}
+                {tab.id}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
 
         <View style={styles.content}>
-          {renderContent()}
+          {tabs.map(tab => (
+            <View key={tab.id} style={{ display: activeTab === tab.id ? 'flex' : 'none' }}>
+              {tab.component}
+            </View>
+          ))}
         </View>
       </ScrollView>
     </SafeAreaView>
