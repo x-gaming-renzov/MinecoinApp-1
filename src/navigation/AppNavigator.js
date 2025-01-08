@@ -5,7 +5,7 @@ import PaymentSuccessScreen from '../screens/PaymentSuccessScreen';
 // import ProcessPurchaseScreen from '../screens/ProcessPurchaseScreen';
 import CoinBundleScreen from '../screens/CoinBundleScreen';
 import ProfileScreen from '../screens/ProfileScreen';
-import CheckoutScreen from '../screens/CheckoutScreen';
+// import CheckoutScreen from '../screens/CheckoutScreen';
 
 const Stack = createStackNavigator();
 
@@ -22,7 +22,7 @@ const AppNavigator = () => {
       {/* <Stack.Screen name="ProcessPurchase" component={ProcessPurchaseScreen} /> */}
       <Stack.Screen name="PaymentSuccess" component={PaymentSuccessScreen} />
       <Stack.Screen name="CoinBundle" component={CoinBundleScreen} />
-      <Stack.Screen name="Checkout" component={CheckoutScreen} />
+      {/* <Stack.Screen name="Checkout" component={CheckoutScreen} /> */}
     </Stack.Navigator>
   );
 };

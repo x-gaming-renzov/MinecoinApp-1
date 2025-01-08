@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, KeyboardAvoidingView, Platform, ActivityIndicator } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, KeyboardAvoidingView, Platform, ActivityIndicator, Linking } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import { Check, User, Lock, AlertCircle } from "lucide-react-native";
@@ -7,6 +7,9 @@ import { useAuth } from "../../context/AuthContext";
 import { useUser } from "../../context/UserContext";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../config/firebase";
+
+// Added Discord server URL constant
+const DISCORD_URL = "https://discord.gg/a3KmcgCqDP";
 
 const SuccessModal = ({ visible, onClose, isUpdating = false }) => (
   <Modal transparent visible={visible} animationType="fade">
@@ -48,6 +51,15 @@ const MCVerificationForm = () => {
   const { user } = useAuth();
   const { updateMcCredentials, loadFirestoreData } = useUser();
   const [isLoading, setIsLoading] = useState(true);
+
+  // Added Discord handler function
+  const handleDiscordPress = async () => {
+    try {
+      await Linking.openURL(DISCORD_URL);
+    } catch (error) {
+      console.error("Error opening Discord link:", error);
+    }
+  };
 
   const [formState, setFormState] = useState({
     credentials: {
@@ -222,6 +234,13 @@ const MCVerificationForm = () => {
           <Text style={styles.verifiedDescription}>
             Your Minecraft account has been verified and is ready to use
           </Text>
+          {/* Added Discord Button */}
+          <TouchableOpacity 
+            style={styles.discordButton}
+            onPress={handleDiscordPress}
+          >
+            <Text style={styles.discordButtonText}>Join Our Discord</Text>
+          </TouchableOpacity>
           <TouchableOpacity 
             style={styles.editButton}
             onPress={() => setFormState(prev => ({
@@ -414,7 +433,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
-  
   submitButton: {
     backgroundColor: '#7C3AED',
     borderRadius: 12,
@@ -471,6 +489,20 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 32,
     lineHeight: 24,
+  },
+  /* Added Discord button styles */
+  discordButton: {
+    width: '100%',
+    backgroundColor: '#5865F2', // Discord brand color
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  discordButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '500',
   },
   editButton: {
     width: '100%',

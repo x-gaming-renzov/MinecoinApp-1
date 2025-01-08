@@ -1,5 +1,5 @@
 // MainScreen.js
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useMemo, useCallback } from 'react';
 import { View, Animated, StyleSheet, Text, Dimensions, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Header from '../components/common/Header';
@@ -7,47 +7,86 @@ import GameCard from '../components/games/GameCard';
 import { fetchGameAssets } from '../config/firebase';
 import { useUser } from '../context/UserContext';
 
+// NEW: Memoized animated game card component
+const AnimatedGameCard = React.memo(({ game, scrollY, index, CARD_WIDTH }) => {
+  const inputRange = useMemo(() => [
+    -1, 
+    0,
+    (index * 150),
+    ((index + 1) * 150)
+  ], [index]);
+
+  const animatedStyle = useMemo(() => {
+    const scale = scrollY.interpolate({
+      inputRange,
+      outputRange: [1, 1, 1, 0.95],
+    });
+    
+    const opacity = scrollY.interpolate({
+      inputRange,
+      outputRange: [1, 1, 1, 0.85],
+    });
+
+    const translateY = scrollY.interpolate({
+      inputRange,
+      outputRange: [0, 0, 0, -20],
+    });
+
+    return {
+      transform: [{ scale }, { translateY }],
+      opacity
+    };
+  }, [scrollY, inputRange]);
+
+  return (
+    <Animated.View 
+      key={game.id}
+      style={[styles.cardContainer, animatedStyle]}
+    >
+      <GameCard
+        game={game}
+        style={{ width: CARD_WIDTH, minHeight: 140 }}
+      />
+    </Animated.View>
+  );
+});
+
 const MainScreen = () => {
   const { width } = Dimensions.get('window');
-  const CARD_WIDTH = width - 32; // Responsive card width
+  const CARD_WIDTH = width - 32;
   const scrollY = useRef(new Animated.Value(0)).current;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [gameAssets, setGameAssets] = useState([]);
-  // NEW: Get balance from UserContext
   const { balance } = useUser();
 
-  // NEW: Add useEffect to monitor balance changes
-  useEffect(() => {
-    console.log("Balance updated:", balance);
-  }, [balance]);
-
-  useEffect(() => {
-    const loadGameAssets = async () => {
-      try {
-        setLoading(true);
-        const assets = await fetchGameAssets();
-        if (assets.length === 0) {
-          setError('No game assets available');
-        } else {
-          setGameAssets(assets);
-        }
-      } catch (err) {
-        console.error('Error loading game assets:', err);
-        setError('Failed to load game assets. Please try again.');
-      } finally {
-        setLoading(false);
+  const loadGameAssets = useCallback(async () => {
+    try {
+      setLoading(true);
+      const assets = await fetchGameAssets();
+      if (assets.length === 0) {
+        setError('No game assets available');
+      } else {
+        setGameAssets(assets);
       }
-    };
-
-    loadGameAssets();
+    } catch (err) {
+      console.error('Error loading game assets:', err);
+      setError('Failed to load game assets. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const titleScale = scrollY.interpolate({
-    inputRange: [-100, 0, 100],
-    outputRange: [1.2, 1, 0.8],
-    extrapolate: 'clamp',
-  });
+  useEffect(() => {
+    loadGameAssets();
+  }, [loadGameAssets]);
+
+  const titleScale = useMemo(() => 
+    scrollY.interpolate({
+      inputRange: [-100, 0, 100],
+      outputRange: [1.2, 1, 0.8],
+      extrapolate: 'clamp',
+    }), [scrollY]);
 
   if (loading) {
     return (
@@ -97,49 +136,15 @@ const MainScreen = () => {
         scrollEventThrottle={16}
       >
         <View style={styles.gamesGrid}>
-          {gameAssets.map((game, index) => {
-            const inputRange = [
-              -1, 0,
-              (index * 150), // Increased from 130 for better spacing
-              ((index + 1) * 150)
-            ];
-            
-            const scale = scrollY.interpolate({
-              inputRange,
-              outputRange: [1, 1, 1, 0.95],
-            });
-            
-            const opacity = scrollY.interpolate({
-              inputRange,
-              outputRange: [1, 1, 1, 0.85],
-            });
-
-            const translateY = scrollY.interpolate({
-              inputRange,
-              outputRange: [0, 0, 0, -20],
-            });
-
-            return (
-              <Animated.View 
-                key={game.id}
-                style={[
-                  styles.cardContainer,
-                  {
-                    transform: [
-                      { scale },
-                      { translateY }
-                    ],
-                    opacity
-                  }
-                ]}
-              >
-                <GameCard
-                  game={game}
-                  style={{ width: CARD_WIDTH, minHeight: 140 }} // Increased height
-                />
-              </Animated.View>
-            );
-          })}
+          {gameAssets.map((game, index) => (
+            <AnimatedGameCard
+              key={game.id}
+              game={game}
+              scrollY={scrollY}
+              index={index}
+              CARD_WIDTH={CARD_WIDTH}
+            />
+          ))}
         </View>
       </Animated.ScrollView>
     </SafeAreaView>

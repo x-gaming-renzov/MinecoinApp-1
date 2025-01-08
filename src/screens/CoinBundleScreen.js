@@ -77,19 +77,26 @@ const Toast = ({ message, visible, onHide, onComplete }) => {
 const CoinBundleScreen = () => {
   const navigation = useNavigation();
   const { isLoggedIn } = useAuth();
-  const { hasMcVerified, addCoins } = useUser();
+  const { hasMcVerified, addCoins, isUpdating } = useUser(); // NEW: Added isUpdating
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [coinBundles, setCoinBundles] = useState([]);
   const [selectedProductId, setSelectedProductId] = useState(null);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
-  // NEW: Add state to track if a transaction was just completed
   const [transactionCompleted, setTransactionCompleted] = useState(false);
+
+  // NEW: Reset error when transaction state changes
+  useEffect(() => {
+    if (!isUpdating && error) {
+      setError(null);
+    }
+  }, [isUpdating]);
 
   useEffect(() => {
     const fetchCoinBundles = async () => {
       try {
+        setLoading(true);
         const bundlesRef = collection(db, "coinBundles");
         const snapshot = await getDocs(bundlesRef);
         const bundles = snapshot.docs.map(doc => ({
@@ -100,6 +107,8 @@ const CoinBundleScreen = () => {
       } catch (error) {
         console.error("Error fetching coin bundles:", error);
         setError("Failed to load coin bundle information");
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -107,15 +116,23 @@ const CoinBundleScreen = () => {
   }, []);
 
   const handlePurchaseSuccess = async (coinBundle) => {
-    await addCoins(coinBundle.coinAmount, coinBundle);
-    // NEW: Set transaction completed flag
-    setTransactionCompleted(true);
-    setToastMessage(`${coinBundle.coinAmount} coins have been added to your account!`);
-    setToastVisible(true);
+    try {
+      await addCoins(coinBundle.coinAmount, coinBundle);
+      setTransactionCompleted(true);
+      setToastMessage(`${coinBundle.coinAmount} coins have been added to your account!`);
+      setToastVisible(true);
+    } catch (error) {
+      console.error('Error adding coins:', error);
+      setError('Failed to add coins to your account. Please contact support.');
+    }
   };
 
   const handlePurchase = async () => {
-    // NEW: Prevent purchase if transaction was just completed
+    if (isUpdating) {
+      setError('Please wait for current transaction to complete.');
+      return;
+    }
+
     if (transactionCompleted) {
       setError('Please return to main screen before making another purchase.');
       return;
@@ -142,13 +159,6 @@ const CoinBundleScreen = () => {
             setSelectedProductId(product.vendorProductId);
           },
           onPurchaseCompleted: async (purchaseResult) => {
-            // Move error check outside try block
-            // if (purchaseResult.error || purchaseResult.status === 'error' || purchaseResult.errorCode === 'ALREADY_OWNED') {
-            //   setError('You already own this item.');
-            //   setSelectedProductId(null);
-            //   return;
-            // }
-
             try {
               const nonSubscriptions = purchaseResult?.nonSubscriptions;
           
@@ -216,6 +226,8 @@ const CoinBundleScreen = () => {
     }
   };
 
+  const isButtonDisabled = loading || isUpdating || transactionCompleted;
+
   return (
     <SafeAreaView style={styles.container}>
       <Toast 
@@ -244,16 +256,20 @@ const CoinBundleScreen = () => {
             <TouchableOpacity 
               style={[
                 styles.bundleButton,
-                // NEW: Add opacity when button is disabled
-                transactionCompleted && { opacity: 0.5 }
+                isButtonDisabled && styles.disabledButton
               ]} 
               onPress={handlePurchase}
-              // NEW: Disable button if transaction was completed
-              disabled={transactionCompleted}
+              disabled={isButtonDisabled}
             >
-              <Text style={styles.bundleButtonText}>
-                {transactionCompleted ? 'Purchase Complete' : 'View Coin Bundles'}
-              </Text>
+              <View style={styles.buttonContent}>
+                {isUpdating ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.bundleButtonText}>
+                    {transactionCompleted ? 'Purchase Complete' : 'View Coin Bundles'}
+                  </Text>
+                )}
+              </View>
             </TouchableOpacity>
           )}
 
@@ -319,6 +335,14 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 32,
     width: '90%',
+    alignItems: 'center',
+  },
+  disabledButton: {
+    opacity: 0.5,
+  },
+  buttonContent: {
+    minHeight: 24,
+    justifyContent: 'center',
     alignItems: 'center',
   },
   bundleButtonText: {

@@ -83,65 +83,63 @@ const UserDetailsForm = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#f2feff',
+    paddingHorizontal: 16,
   },
   statsCard: {
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#6C47FF',
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
     overflow: 'hidden',
-    margin: 0,
+    marginTop: 16,
+    marginBottom: 20,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#6C47FF',
-    backgroundColor: '#1B1D2E',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    backgroundColor: '#FFFFFF',
   },
   playerHead: {
-    width: 50,
-    height: 50,
-    borderRadius: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 8,
     marginRight: 12,
-    borderWidth: 2,
-    borderColor: '#6C47FF',
   },
   usernameBox: {
     flex: 1,
   },
   usernameLabel: {
     fontSize: 14,
-    color: '#94A3B8',
+    color: '#6B7280',
     marginBottom: 4,
   },
   username: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#1F2937',
   },
   statsBox: {
-    backgroundColor: '#1B1D2E',
-    padding: 16,
+    backgroundColor: '#FFFFFF',
+    paddingBottom: 8,
   },
   statRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(108, 71, 255, 0.2)',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
   },
   statLabel: {
     fontSize: 16,
-    color: '#E2E8F0',
+    color: '#1F2937',
   },
   statValue: {
     fontSize: 16,
+    color: '#7C3AED',
     fontWeight: '500',
-    color: '#FFFFFF',
-    minWidth: 50,
-    textAlign: 'right',
   },
   logoutButton: {
     backgroundColor: '#EF4444',
@@ -150,7 +148,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 16,
     borderRadius: 12,
-    margin: 16,
+    marginBottom: 12,
   },
   logoutIcon: {
     marginRight: 8,
@@ -161,5 +159,4 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   }
 });
-
-export default UserDetailsForm
+export default UserDetailsForm;

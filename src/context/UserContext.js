@@ -4,15 +4,21 @@ import React, {
   useContext,
   useCallback,
   useEffect,
+  useRef,
 } from "react";
 import { useAuth } from "./AuthContext";
 import { doc, updateDoc, getDoc, arrayUnion, onSnapshot } from "firebase/firestore";
 import { db } from "../config/firebase";
+import _ from 'lodash';
 
 const UserContext = createContext(null);
 
 export const UserProvider = ({ children }) => {
-  console.log("UserProvider initialized");
+  const isInitialMount = useRef(true);
+  if (isInitialMount.current) {
+    console.log("UserProvider initialized");
+    isInitialMount.current = false;
+  }  
   
   const { isLoggedIn, user } = useAuth();
   const [balance, setBalance] = useState(0);
@@ -23,61 +29,113 @@ export const UserProvider = ({ children }) => {
     password: "",
   });
   const [linkedPlayer, setLinkedPlayer] = useState(null);
+  const [isUpdating, setIsUpdating] = useState(false);
+  
+  const lastBalanceRef = useRef(null);
+  const isMountedRef = useRef(true);
+  const isSyncingRef = useRef(false);
+
+  const debouncedUpdateBalance = useCallback(
+    _.debounce(async (userRef, newBalance) => {
+      if (!isMountedRef.current || isSyncingRef.current) return;
+      try {
+        isSyncingRef.current = true;
+        await updateDoc(userRef, {
+          coinBalance: newBalance
+        });
+      } catch (error) {
+        console.error('Balance update failed:', error);
+      } finally {
+        isSyncingRef.current = false;
+        if (isMountedRef.current) {
+          setIsUpdating(false);
+        }
+      }
+    }, 500), // Increased debounce to 500ms for better performance
+    []
+  );
+
+  const updateBalance = useCallback((newBalance, userRef) => {
+    if (!isMountedRef.current || lastBalanceRef.current === newBalance) return;
+    
+    setIsUpdating(true);
+    lastBalanceRef.current = newBalance;
+    setBalance(newBalance);
+    
+    if (userRef) {
+      debouncedUpdateBalance(userRef, newBalance);
+    } else {
+      setIsUpdating(false);
+    }
+  }, [debouncedUpdateBalance]);
 
   useEffect(() => {
-    console.log("Auth state changed:", { isLoggedIn, userEmail: user?.email });
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
     if (isLoggedIn && user) {
-      console.log("Loading user data from Firestore...");
       loadFirestoreData();
     } else {
-      console.log("User logged out, resetting states");
-      setBalance(0);
+      updateBalance(0);
       setTransactions([]);
       setHasMcVerified(false);
       setMcCredentials({ username: "", password: "" });
       setLinkedPlayer(null);
+      lastBalanceRef.current = null;
     }
-  }, [isLoggedIn, user]);
+  }, [isLoggedIn, user, updateBalance]);
 
-  // NEW: Added real-time player data sync
   useEffect(() => {
-    if (isLoggedIn && user && mcCredentials.username) {
-      console.log("Setting up real-time player data sync");
-      const playerRef = doc(db, "players", mcCredentials.username);
-      const userRef = doc(db, "users", user.email);
-      
-      // NEW: Setup parallel listeners for both player and user data
-      const playerUnsubscribe = onSnapshot(playerRef, async (doc) => {
+    if (!isLoggedIn || !user || !mcCredentials.username) return;
+
+    const playerRef = doc(db, "players", mcCredentials.username);
+    const userRef = doc(db, "users", user.email);
+    let isSubscribed = true;
+
+    const playerUnsubscribe = onSnapshot(playerRef, 
+      async (doc) => {
+        if (!isSubscribed || !isMountedRef.current) return;
+        
         if (doc.exists()) {
           const playerData = doc.data();
-          setLinkedPlayer(prev => ({
-            ...prev,
-            kills: playerData.kills,
-            deaths: playerData.deaths,
-            kdRatio: playerData.kdRatio,
-            leaderboardPosition: playerData.leaderboardPosition,
-            imgUrl: playerData.imgUrl,
-            coinBalance: playerData.coinBalance,
-            ip: playerData.ip,
-            UUID: playerData.UUID,
-          }));
           
-          // NEW: Sync user balance when player balance changes
-          if (playerData.coinBalance !== undefined) {
-            setBalance(playerData.coinBalance);
-            // Update user document to keep in sync
-            await updateDoc(userRef, {
-              coinBalance: playerData.coinBalance
-            });
+          setLinkedPlayer(prev => {
+            if (_.isEqual(prev, playerData)) return prev;
+            return {
+              ...prev,
+              kills: playerData.kills,
+              deaths: playerData.deaths,
+              kdRatio: playerData.kdRatio,
+              leaderboardPosition: playerData.leaderboardPosition,
+              imgUrl: playerData.imgUrl,
+              coinBalance: playerData.coinBalance,
+              ip: playerData.ip,
+              UUID: playerData.UUID,
+            };
+          });
+
+          if (playerData.coinBalance !== undefined && !isSyncingRef.current) {
+            updateBalance(playerData.coinBalance, userRef);
           }
         }
-      });
-  
-      return () => {
-        playerUnsubscribe();
-      };
-    }
-  }, [isLoggedIn, user, mcCredentials.username]);
+      }, 
+      error => {
+        console.error("Player sync error:", error);
+        if (isMountedRef.current) {
+          setIsUpdating(false);
+        }
+      }
+    );
+
+    return () => {
+      isSubscribed = false;
+      playerUnsubscribe();
+      debouncedUpdateBalance.cancel();
+    };
+  }, [isLoggedIn, user, mcCredentials.username, debouncedUpdateBalance, updateBalance]);
   
   const loadFirestoreData = async () => {
     try {
@@ -322,6 +380,7 @@ const addCoins = useCallback(
         mcCredentials,
         linkedPlayer,
         loadFirestoreData,
+        isUpdating,  // NEW: Expose loading state
       }}
     >
       {children}
