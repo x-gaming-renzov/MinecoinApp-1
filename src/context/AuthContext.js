@@ -7,8 +7,10 @@ import {
   signOutUser as firebaseSignOutUser,
   saveUserToFirestore,
   getUserData,
-  updateFCMToken
+  updateFCMToken,
 } from "../config/firebase";
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '../config/firebase';
 
 import { 
   requestNotificationPermission, 
@@ -58,7 +60,6 @@ export const AuthProvider = ({ children }) => {
     restoreUser();
   }, []);
 
-  // NEW: Enhanced restoreUser function with better error handling
   const restoreUser = async () => {
     try {
       console.log("Attempting to restore user session");
@@ -67,7 +68,6 @@ export const AuthProvider = ({ children }) => {
         console.log("Found stored user data");
         const parsedUser = JSON.parse(userData);
         
-        // NEW: Added additional validation
         if (!parsedUser.email) {
           console.error("Invalid stored user data");
           await AsyncStorage.removeItem("user");
@@ -75,9 +75,45 @@ export const AuthProvider = ({ children }) => {
         }
         
         console.log("Fetching fresh data from Firestore for:", parsedUser.email);
-        const firestoreData = await getUserData(parsedUser.email);
+        let firestoreData = await getUserData(parsedUser.email);
         
         if (firestoreData) {
+          // NEW: Check and give daily reward
+          if (firestoreData.hasMcVerified) {
+            const now = new Date().getTime();
+            const lastReward = firestoreData.lastRewardTimestamp || 0;
+            const hoursSinceLastReward = (now - lastReward) / (1000 * 60 * 60);
+            
+            if (hoursSinceLastReward >= 24) {
+              console.log("Giving daily reward");
+              const newBalance = (firestoreData.coinBalance || 0) + 10;
+              const userRef = doc(db, "users", parsedUser.email);
+              
+              // NEW: First update Firebase
+              await updateDoc(userRef, {
+                coinBalance: newBalance,
+                lastRewardTimestamp: now
+              });
+              
+              // NEW: Create new object for updated data
+              firestoreData = {
+                ...firestoreData,
+                coinBalance: newBalance,
+                lastRewardTimestamp: now
+              };
+
+              // NEW: Sync with player collection if MC verified
+              if (firestoreData.mcUsername) {
+                const playerRef = doc(db, "players", firestoreData.mcUsername);
+                await updateDoc(playerRef, {
+                  coinBalance: newBalance
+                });
+              }
+
+              console.log("Daily reward given, new balance:", newBalance);
+            }
+          }
+        
           const updatedUser = {
             ...parsedUser,
             ...firestoreData
@@ -99,7 +135,6 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error("Error restoring user:", error);
-      // NEW: Clear storage on error
       await AsyncStorage.removeItem("user");
     }
   };
@@ -120,13 +155,48 @@ export const AuthProvider = ({ children }) => {
       console.log("Google Sign In successful:", userData.email);
 
       console.log("Checking existing Firestore data");
-      const firestoreData = await getUserData(userData.email);
+      let firestoreData = await getUserData(userData.email);
       
       if (!firestoreData) {
         console.log("New user - creating Firestore record");
         await saveUserToFirestore(userData);
+        firestoreData = await getUserData(userData.email);
       } else {
         console.log("Existing user found in Firestore");
+      }
+
+      // NEW: Check for daily reward on sign in
+      if (firestoreData && firestoreData.hasMcVerified) {
+        const now = new Date().getTime();
+        const lastReward = firestoreData.lastRewardTimestamp || 0;
+        const hoursSinceLastReward = (now - lastReward) / (1000 * 60 * 60);
+        
+        if (hoursSinceLastReward >= 24) {
+          console.log("Giving daily reward on sign in");
+          const newBalance = (firestoreData.coinBalance || 0) + 10;
+          const userRef = doc(db, "users", userData.email);
+          
+          await updateDoc(userRef, {
+            coinBalance: newBalance,
+            lastRewardTimestamp: now
+          });
+          
+          firestoreData = {
+            ...firestoreData,
+            coinBalance: newBalance,
+            lastRewardTimestamp: now
+          };
+
+          // NEW: Sync with player collection if MC verified
+          if (firestoreData.mcUsername) {
+            const playerRef = doc(db, "players", firestoreData.mcUsername);
+            await updateDoc(playerRef, {
+              coinBalance: newBalance
+            });
+          }
+
+          console.log("Daily reward given on sign in, new balance:", newBalance);
+        }
       }
 
       const completeUserData = {
@@ -151,13 +221,11 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // NEW: Enhanced signOut function with cleanup
   const signOut = async () => {
     try {
       console.log("Starting sign out process");
       await firebaseSignOutUser();
       
-      // NEW: Clear all user-related data
       await AsyncStorage.clear();
       setUser(null);
       setIsLoggedIn(false);

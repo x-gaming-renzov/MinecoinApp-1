@@ -2,7 +2,7 @@ import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { initializeAuth, getReactNativePersistence, GoogleAuthProvider, signInWithCredential, signOut } from "firebase/auth";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { initializeApp } from "firebase/app";
-import { getFirestore, doc, setDoc, collection, getDocs, updateDoc, arrayUnion, getDoc } from "firebase/firestore";
+import { getFirestore, doc, setDoc, collection, getDocs, updateDoc, arrayUnion, getDoc, query, orderBy, limit } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBeRGbmPSSpNvfHSxYvBox8XWWgTE7U7OA",
@@ -80,7 +80,8 @@ const saveUserToFirestore = async (user) => {
       transactions: [],
       hasMcVerified: false,
       mcUsername: "",
-      fcmToken: user.fcmToken
+      fcmToken: user.fcmToken,
+      lastRewardTimestamp: 0  // Added this line
     });
     console.log("Firestore save completed");
   } catch (error) {
@@ -235,6 +236,25 @@ const signOutUser = async () => {
   }
 };
 
+const getLatestNotification = async () => {
+  try {
+    console.log("Fetching latest notification...");
+    const notificationsRef = collection(db, "serverNotifications");
+    const q = query(notificationsRef, orderBy("timestamp", "desc"), limit(1));
+    const snapshot = await getDocs(q);
+    if (!snapshot.empty) {
+      return {
+        id: snapshot.docs[0].id,
+        ...snapshot.docs[0].data()
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error("Error fetching notification:", error);
+    throw error;
+  }
+};
+
 export {
   auth,
   db,
@@ -250,4 +270,5 @@ export {
   fetchCoinBundles,
   updateUserBalance,
   updateFCMToken,
+  getLatestNotification, // Add new export
 };

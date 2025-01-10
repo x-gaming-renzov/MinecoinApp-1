@@ -90,18 +90,20 @@ export const UserProvider = ({ children }) => {
 
   useEffect(() => {
     if (!isLoggedIn || !user || !mcCredentials.username) return;
-
+    
     const playerRef = doc(db, "players", mcCredentials.username);
     const userRef = doc(db, "users", user.email);
     let isSubscribed = true;
-
-    const playerUnsubscribe = onSnapshot(playerRef, 
+  
+    // NEW: Real-time listener for player data changes
+    const playerUnsubscribe = onSnapshot(playerRef,
       async (doc) => {
         if (!isSubscribed || !isMountedRef.current) return;
         
         if (doc.exists()) {
           const playerData = doc.data();
-          
+  
+          // NEW: Update linked player state with optimized comparison
           setLinkedPlayer(prev => {
             if (_.isEqual(prev, playerData)) return prev;
             return {
@@ -116,12 +118,14 @@ export const UserProvider = ({ children }) => {
               UUID: playerData.UUID,
             };
           });
-
+  
+          // NEW: Update balance if changed and not currently syncing
           if (playerData.coinBalance !== undefined && !isSyncingRef.current) {
+            console.log("Updating balance from player data:", playerData.coinBalance);
             updateBalance(playerData.coinBalance, userRef);
           }
         }
-      }, 
+      },
       error => {
         console.error("Player sync error:", error);
         if (isMountedRef.current) {
@@ -129,7 +133,8 @@ export const UserProvider = ({ children }) => {
         }
       }
     );
-
+  
+    // Cleanup function
     return () => {
       isSubscribed = false;
       playerUnsubscribe();
@@ -147,7 +152,11 @@ export const UserProvider = ({ children }) => {
         const userData = userDoc.data();
         console.log("User data loaded", userData);
         
-        setBalance(userData.coinBalance || 0);
+        // NEW: Set initial balance from user data
+        const initialBalance = userData.coinBalance || 0;
+        console.log("Setting initial balance:", initialBalance);
+        setBalance(initialBalance);
+        
         setTransactions(userData.transactions || []);
         setHasMcVerified(userData.hasMcVerified || false);
         setMcCredentials({
@@ -155,20 +164,25 @@ export const UserProvider = ({ children }) => {
           password: userData.mcPassword || "",
         });
   
+        // NEW: Check and sync with player data if verified
         if (userData.hasMcVerified && userData.mcUsername) {
           const playerRef = doc(db, "players", userData.mcUsername);
           const playerDoc = await getDoc(playerRef);
           
           if (playerDoc.exists()) {
             const playerData = playerDoc.data();
+            
             setLinkedPlayer({
               id: playerDoc.id,
               coinBalance: playerData.coinBalance,
               ...playerData
             });
   
-            if (playerData.coinBalance !== userData.coinBalance) {
+            // NEW: If player balance differs, update both states
+            if (playerData.coinBalance !== initialBalance) {
+              console.log("Syncing balance with player data:", playerData.coinBalance);
               setBalance(playerData.coinBalance);
+              await updateDoc(userRef, { coinBalance: playerData.coinBalance });
             }
           }
         }

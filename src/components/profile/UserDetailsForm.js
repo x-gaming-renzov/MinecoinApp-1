@@ -1,15 +1,18 @@
+// UserDetailsForm.js
 import React from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, ScrollView, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
-import { useUser } from '../../context/UserContext';
-import { LogOut } from 'lucide-react-native';
+import CalendarCard from './CalendarCard';
+import AppEventsCard from './AppEventsCard';
 import VoteButton from './VoteButton';
+import QuestButton from './QuestButton';
+import { LogOut } from 'lucide-react-native';
+import { TouchableOpacity, Text } from 'react-native';
 
 const UserDetailsForm = () => {
   const navigation = useNavigation();
-  const { user, signOut } = useAuth();
-  const { linkedPlayer, mcCredentials } = useUser();
+  const { signOut } = useAuth();
 
   const handleLogout = async () => {
     try {
@@ -24,48 +27,31 @@ const UserDetailsForm = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.statsCard}>
-        <View style={styles.header}>
-          <Image
-            source={{
-              uri: linkedPlayer?.imgUrl || 'https://via.placeholder.com/60',
-            }}
-            style={styles.playerHead}
-          />
-          <View style={styles.usernameBox}>
-            <Text style={styles.usernameLabel}>Minecraft Username</Text>
-            <Text style={styles.username}>{mcCredentials?.username || 'Default ALEX'}</Text>
-          </View>
+    <ScrollView 
+      style={styles.container}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Calendar Section */}
+      <View style={styles.cardContainer}>
+        <CalendarCard />
+      </View>
+
+      {/* Daily Questions Section */}
+      <View style={styles.cardContainer}>
+        <AppEventsCard />
+      </View>
+
+      {/* Vote and Quest Buttons Section */}
+      <View style={styles.buttonGroup}>
+        <View style={styles.buttonWrapper}>
+          <VoteButton />
         </View>
-
-        <View style={styles.statsBox}>
-          <View style={styles.statRow}>
-            <Text style={styles.statLabel}>Kill :-</Text>
-            <Text style={styles.statValue}>{linkedPlayer?.kills || 0}</Text>
-          </View>
-
-          <View style={styles.statRow}>
-            <Text style={styles.statLabel}>Death :-</Text>
-            <Text style={styles.statValue}>{linkedPlayer?.deaths || 0}</Text>
-          </View>
-
-          <View style={styles.statRow}>
-            <Text style={styles.statLabel}>K/D Ratio :-</Text>
-            <Text style={styles.statValue}>{linkedPlayer?.kdRatio || 0}</Text>
-          </View>
-
-          <View style={styles.statRow}>
-            <Text style={styles.statLabel}>Leaderboard Position :-</Text>
-            <Text style={styles.statValue}>
-              {linkedPlayer?.leaderboardPosition > 0
-                ? `#${linkedPlayer.leaderboardPosition}`
-                : 'Not Ranked'}
-            </Text>
-          </View>
+        <View style={styles.buttonWrapper}>
+          <QuestButton />
         </View>
       </View>
 
+      {/* Logout Button */}
       <TouchableOpacity
         style={styles.logoutButton}
         onPress={handleLogout}
@@ -74,9 +60,7 @@ const UserDetailsForm = () => {
         <LogOut size={20} color="#FFFFFF" style={styles.logoutIcon} />
         <Text style={styles.logoutText}>Logout</Text>
       </TouchableOpacity>
-
-      <VoteButton username={mcCredentials?.username} ip={linkedPlayer?.ip} />
-    </View>
+    </ScrollView>
   );
 };
 
@@ -84,62 +68,29 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f2feff',
-    paddingHorizontal: 16,
+    padding: 16,
   },
-  statsCard: {
+  cardContainer: {
+    marginBottom: 16,
     borderRadius: 16,
     backgroundColor: '#FFFFFF',
-    overflow: 'hidden',
-    marginTop: 16,
-    marginBottom: 20,
+    shadowColor: '#7C3AED',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    backgroundColor: '#FFFFFF',
-  },
-  playerHead: {
-    width: 44,
-    height: 44,
-    borderRadius: 8,
-    marginRight: 12,
-  },
-  usernameBox: {
-    flex: 1,
-  },
-  usernameLabel: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 4,
-  },
-  username: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1F2937',
-  },
-  statsBox: {
-    backgroundColor: '#FFFFFF',
-    paddingBottom: 8,
-  },
-  statRow: {
+  buttonGroup: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    marginBottom: 16,
+    gap: 12, // Space between buttons
   },
-  statLabel: {
-    fontSize: 16,
-    color: '#1F2937',
-  },
-  statValue: {
-    fontSize: 16,
-    color: '#7C3AED',
-    fontWeight: '500',
+  buttonWrapper: {
+    flex: 1, // Makes both buttons take equal width
   },
   logoutButton: {
     backgroundColor: '#EF4444',
@@ -148,7 +99,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 16,
     borderRadius: 12,
-    marginBottom: 12,
+    marginBottom: 16,
   },
   logoutIcon: {
     marginRight: 8,
@@ -157,6 +108,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
-  }
+  },
 });
+
 export default UserDetailsForm;

@@ -4,10 +4,11 @@ import { View, Animated, StyleSheet, Text, Dimensions, ActivityIndicator } from 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Header from '../components/common/Header';
 import GameCard from '../components/games/GameCard';
+import NotificationBanner from '../components/common/NotificationBanner';
 import { fetchGameAssets } from '../config/firebase';
 import { useUser } from '../context/UserContext';
 
-// NEW: Memoized animated game card component
+// Memoized animated game card component
 const AnimatedGameCard = React.memo(({ game, scrollY, index, CARD_WIDTH }) => {
   const inputRange = useMemo(() => [
     -1, 
@@ -92,6 +93,7 @@ const MainScreen = () => {
     return (
       <SafeAreaView style={styles.safeArea}>
         <Header balance={balance} />
+        <NotificationBanner />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#7C3AED" />
           <Text style={styles.loadingText}>Loading game assets...</Text>
@@ -104,6 +106,7 @@ const MainScreen = () => {
     return (
       <SafeAreaView style={styles.safeArea}>
         <Header balance={balance} />
+        <NotificationBanner />
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{error}</Text>
         </View>
@@ -114,6 +117,7 @@ const MainScreen = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <Header balance={balance} />
+      <NotificationBanner />
       <Animated.View 
         style={[
           styles.titleWrapper,
@@ -150,7 +154,6 @@ const MainScreen = () => {
     </SafeAreaView>
   );
 };
-
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,

@@ -234,6 +234,20 @@ const MCVerificationForm = () => {
           <Text style={styles.verifiedDescription}>
             Your Minecraft account has been verified and is ready to use
           </Text>
+          {/* NEW: Add daily reward info */}
+<View style={styles.rewardsContainer}>
+  <View style={styles.rewardsHeader}>
+    <Text style={styles.rewardsTitle}>✨ Daily Rewards Activated</Text>
+  </View>
+  <View style={styles.rewardsInfo}>
+    <Text style={styles.rewardsBenefit}>
+      🎁 Get 10 free coins daily
+    </Text>
+    <Text style={styles.rewardsDescription}>
+      Simply open the app once every 24 hours to claim your reward automatically
+    </Text>
+  </View>
+</View>
           {/* Added Discord Button */}
           <TouchableOpacity 
             style={styles.discordButton}
@@ -285,7 +299,7 @@ const MCVerificationForm = () => {
               <User size={20} color="#7C3AED" />
               <TextInput
                 style={styles.input}
-                placeholder="Minecraft username"
+                placeholder="Enter your Minecraft gamertag"
                 placeholderTextColor="#6B7280"
                 value={formState.credentials.username}
                 onChangeText={(text) => setFormState(prev => ({
@@ -320,7 +334,7 @@ const MCVerificationForm = () => {
               <Lock size={20} color="#7C3AED" />
               <TextInput
                 style={styles.input}
-                placeholder="Minecraft password"
+                placeholder="Password used with /register"
                 placeholderTextColor="#6B7280"
                 secureTextEntry={formState.uiState.secureTextEntry}
                 value={formState.credentials.password}
@@ -421,7 +435,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 15,
     color: '#1F2937',
     padding: 0,
   },
@@ -581,6 +595,40 @@ const styles = StyleSheet.create({
   },
   successText: {
     color: '#10B981',
+  },
+  rewardsContainer: {
+    backgroundColor: '#F5F3FF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#DDD6FE',
+  },
+  rewardsHeader: {
+    marginBottom: 8,
+    alignItems: 'center',
+  },
+  rewardsTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#7C3AED',
+    textAlign: 'center',
+  },
+  rewardsInfo: {
+    alignItems: 'center',
+  },
+  rewardsBenefit: {
+    fontSize: 16,
+    color: '#4C1D95',
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  rewardsDescription: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });
 

@@ -6,6 +6,8 @@ import { NetworkInfo } from 'react-native-network-info';
 import { Buffer } from 'buffer';
 import axios from 'axios';
 import { RSA } from 'react-native-rsa-native';
+// Add new import for icon
+import { Vote } from 'lucide-react-native';
 
 global.Buffer = Buffer;
 
@@ -213,6 +215,8 @@ const VoteButton = ({ username, ip }) => {
         disabled={cooldown > 0 || isLoading}
         activeOpacity={0.8}
       >
+        {/* Add Vote icon */}
+        <Vote size={20} color="#FFFFFF" style={styles.icon} />
         <Text style={styles.voteText}>{getButtonText()}</Text>
       </TouchableOpacity>
 
@@ -282,6 +286,21 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '500',
+  },
+  // Add new style for icon
+  icon: {
+    marginRight: 8,
+  },
+  
+  // Update voteButton to include row layout
+  voteButton: {
+    backgroundColor: '#10B981',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    flexDirection: 'row', // Add this to align icon and text
   },
 });
 
