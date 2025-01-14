@@ -255,6 +255,18 @@ const getLatestNotification = async () => {
   }
 };
 
+// NEW: Add maintenance check function
+const checkMaintenanceMode = async () => {
+  try {
+    const maintenanceRef = doc(db, "appConfig", "maintenance");
+    const maintenanceDoc = await getDoc(maintenanceRef);
+    return maintenanceDoc.exists() ? maintenanceDoc.data() : { isMaintenanceMode: false };
+  } catch (error) {
+    console.error("Error checking maintenance mode:", error);
+    return { isMaintenanceMode: false };
+  }
+};
+
 export {
   auth,
   db,
@@ -271,4 +283,5 @@ export {
   updateUserBalance,
   updateFCMToken,
   getLatestNotification, // Add new export
+  checkMaintenanceMode  // NEW: Export maintenance check
 };

@@ -8,6 +8,7 @@ import {
   saveUserToFirestore,
   getUserData,
   updateFCMToken,
+  checkMaintenanceMode,
 } from "../config/firebase";
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
@@ -141,6 +142,12 @@ export const AuthProvider = ({ children }) => {
 
   const signInWithGoogle = async () => {
     try {
+      // NEW: Check maintenance mode first
+      const { isMaintenanceMode } = await checkMaintenanceMode();
+      if (isMaintenanceMode) {
+        throw new Error("App is under maintenance");
+    }
+
       console.log("Starting Google Sign In process");
       const userCredential = await firebaseSignInWithGoogle();
       

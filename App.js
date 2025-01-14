@@ -7,6 +7,7 @@ import { AuthProvider } from "./src/context/AuthContext";
 import { UserProvider } from "./src/context/UserContext";
 import AppNavigator from "./src/navigation/AppNavigator";
 import { adapty } from 'react-native-adapty';
+import MaintenanceCheck from "./src/components/common/MaintenanceCheck";
 
 adapty.activate('public_live_a2ZpIYeH.UBLMWSv1MLfHElcx8N9j');
 
@@ -14,6 +15,7 @@ const App = () => {
   return (
     <AuthProvider>
       <UserProvider>
+      <MaintenanceCheck>  
         <GestureHandlerRootView style={{ flex: 1 }}>
           <SafeAreaProvider>
             <StatusBar
@@ -26,6 +28,7 @@ const App = () => {
             </NavigationContainer>
           </SafeAreaProvider>
         </GestureHandlerRootView>
+        </MaintenanceCheck>  {/* Add this */}
       </UserProvider>
     </AuthProvider>
   );
