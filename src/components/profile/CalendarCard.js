@@ -1,37 +1,72 @@
-// CalendarCard.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 import { Calendar as CalendarIcon, X, Gift } from 'lucide-react-native';
+import { collection, onSnapshot } from 'firebase/firestore';
+import { db } from '../../config/firebase';
 
 const CalendarCard = () => {
   const [selectedDate, setSelectedDate] = useState('');
   const [showEventDetails, setShowEventDetails] = useState(false);
+  const [markedDates, setMarkedDates] = useState({});
+  const [events, setEvents] = useState([]);
+  const [selectedEvent, setSelectedEvent] = useState(null);
 
-  // TODO: Replace with actual event dates from API
-  const markedDates = {
-    '2025-01-15': {
-      marked: true,
-      dotColor: '#7C3AED',
-      selected: selectedDate === '2025-01-15',
-      selectedColor: 'rgba(124, 58, 237, 0.1)',
-    },
-    // Add more dates here when API is ready
-  };
+// Real-time listener code
+useEffect(() => {
+  console.log("Setting up real-time event listener...");
+  // Create listener for game events
+  const unsubscribe = onSnapshot(collection(db, "gameEvents"), (snapshot) => {
+    const gameEvents = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    
+    // Transform events into marked dates format
+    const marked = {};
+    gameEvents.forEach(event => {
+      if (event.isActive) {
+        const dateStr = new Date(event.date.seconds * 1000 + event.date.nanoseconds/1000000).toLocaleDateString('en-CA');
+        marked[dateStr] = {
+          marked: true,
+          dotColor: '#7C3AED',
+          selected: selectedDate === dateStr,
+          selectedColor: 'rgba(124, 58, 237, 0.1)',
+        };
+      }
+    });
 
-  // TODO: Replace with actual event details from API
-  const eventDetails = {
-    title: 'Special Event',
-    description: 'Join us for an exciting gaming event!',
-    time: '8:00 PM',
-    rewards: '100 Coins',
-  };
+    console.log("Real-time update received:", gameEvents);
+    setMarkedDates(marked);
+    setEvents(gameEvents);
+  });
+
+  // Cleanup listener on unmount
+  return () => unsubscribe();
+}, [selectedDate]);
 
   const handleDateSelect = (day) => {
+    console.log("Date selected:", day.dateString);
     setSelectedDate(day.dateString);
-    if (markedDates[day.dateString]) {
+    
+    // Find event for selected date
+    const selectedEvent = events.find(event => {
+      const eventDate = new Date(event.date.seconds * 1000 + event.date.nanoseconds/1000000).toLocaleDateString('en-CA');
+      return eventDate === day.dateString && event.isActive;
+    });
+
+    if (selectedEvent) {
+      console.log("Event found for selected date:", selectedEvent);
+      setSelectedEvent(selectedEvent);
       setShowEventDetails(true);
+    } else {
+      console.log("No event found for selected date");
+      setSelectedEvent(null);
     }
+  };
+
+  const formatEventTime = (timestamp) => {
+    return timestamp || '8:00 PM'; // Fallback time if not specified
   };
 
   return (
@@ -66,7 +101,7 @@ const CalendarCard = () => {
       {/* Event Details Modal */}
       <Modal
         transparent
-        visible={showEventDetails}
+        visible={showEventDetails && selectedEvent !== null}
         animationType="fade"
         onRequestClose={() => setShowEventDetails(false)}
       >
@@ -74,7 +109,7 @@ const CalendarCard = () => {
           <View style={styles.modalContent}>
             {/* Modal Header */}
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{eventDetails.title}</Text>
+              <Text style={styles.modalTitle}>{selectedEvent?.title}</Text>
               <TouchableOpacity 
                 onPress={() => setShowEventDetails(false)}
                 style={styles.closeButton}
@@ -86,18 +121,18 @@ const CalendarCard = () => {
             {/* Event Date & Time */}
             <View style={styles.dateTimeContainer}>
               <Text style={styles.date}>{selectedDate}</Text>
-              <Text style={styles.time}>{eventDetails.time}</Text>
+              <Text style={styles.time}>{selectedEvent?.time}</Text>
             </View>
 
             {/* Event Description */}
-            <Text style={styles.description}>{eventDetails.description}</Text>
+            <Text style={styles.description}>{selectedEvent?.description}</Text>
 
             {/* Event Rewards */}
             <View style={styles.rewardContainer}>
               <Gift size={20} color="#7C3AED" />
               <View style={styles.rewardContent}>
                 <Text style={styles.rewardLabel}>Event Rewards</Text>
-                <Text style={styles.rewardValue}>{eventDetails.rewards}</Text>
+                <Text style={styles.rewardValue}>{selectedEvent?.rewards} Coins</Text>
               </View>
             </View>
           </View>

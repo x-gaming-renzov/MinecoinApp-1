@@ -45,6 +45,9 @@ export const AuthProvider = ({ children }) => {
         const notificationUnsubscribe = setupNotificationHandlers();
         const tokenUnsubscribe = await setupTokenRefreshListener(userEmail);
 
+        // NEW: A quick check/log for clarity (or any other logic if needed)
+        console.log("Token refresh listener attached for:", userEmail); // <-- NEW
+
         return () => {
           notificationUnsubscribe();
           if (tokenUnsubscribe) tokenUnsubscribe();
@@ -60,6 +63,13 @@ export const AuthProvider = ({ children }) => {
     configureGoogleSignIn();
     restoreUser();
   }, []);
+
+  // NEW: Now also call setupNotifications whenever we have a valid user
+  useEffect(() => {
+    if (user && user.email) {
+      setupNotifications(user.email); // <-- NEW
+    }
+  }, [user]);
 
   const restoreUser = async () => {
     try {
@@ -140,6 +150,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+
   const signInWithGoogle = async () => {
     try {
       // NEW: Check maintenance mode first
@@ -172,6 +183,7 @@ export const AuthProvider = ({ children }) => {
         console.log("Existing user found in Firestore");
       }
 
+      
       // NEW: Check for daily reward on sign in
       if (firestoreData && firestoreData.hasMcVerified) {
         const now = new Date().getTime();

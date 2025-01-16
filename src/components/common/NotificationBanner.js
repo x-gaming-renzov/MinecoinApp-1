@@ -38,8 +38,8 @@ const NotificationBanner = () => {
   // Set up connection to Firebase when component starts
   useEffect(() => {
     try {
-      // Connect to the serverNotifications collection in Firebase
-      const notificationsRef = collection(db, 'serverNotifications');
+      // Connect to the bannerNotifications collection in Firebase
+      const notificationsRef = collection(db, 'bannerNotifications');
       
       // Create a query to get the newest notification
       const q = query(

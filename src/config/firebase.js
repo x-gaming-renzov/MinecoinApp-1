@@ -239,7 +239,7 @@ const signOutUser = async () => {
 const getLatestNotification = async () => {
   try {
     console.log("Fetching latest notification...");
-    const notificationsRef = collection(db, "serverNotifications");
+    const notificationsRef = collection(db, "bannerNotifications");
     const q = query(notificationsRef, orderBy("timestamp", "desc"), limit(1));
     const snapshot = await getDocs(q);
     if (!snapshot.empty) {
@@ -267,6 +267,31 @@ const checkMaintenanceMode = async () => {
   }
 };
 
+// Fetch all game events from Firebase
+const fetchGameEvents = async () => {
+  try {
+    console.log("Fetching game events...");
+    const eventsRef = collection(db, "gameEvents");
+    const snapshot = await getDocs(eventsRef);
+    
+    if (snapshot.empty) {
+      console.log("No game events found");
+      return [];
+    }
+
+    const events = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+    console.log(`Successfully fetched ${events.length} game events`);
+    return events;
+  } catch (error) {
+    console.error("Error fetching game events:", error);
+    throw error;
+  }
+};
+
 export {
   auth,
   db,
@@ -283,5 +308,6 @@ export {
   updateUserBalance,
   updateFCMToken,
   getLatestNotification, // Add new export
-  checkMaintenanceMode  // NEW: Export maintenance check
+  checkMaintenanceMode,  // NEW: Export maintenance check
+  fetchGameEvents, // Add this new export
 };
