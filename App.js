@@ -28,7 +28,7 @@ const App = () => {
             </NavigationContainer>
           </SafeAreaProvider>
         </GestureHandlerRootView>
-        </MaintenanceCheck>  {/* Add this */}
+        </MaintenanceCheck>  
       </UserProvider>
     </AuthProvider>
   );
