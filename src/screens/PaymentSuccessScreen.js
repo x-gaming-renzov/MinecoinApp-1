@@ -30,7 +30,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f2feff',
+    backgroundColor: '#0a0a0a',
   },
   successIcon: {
     width: 64,

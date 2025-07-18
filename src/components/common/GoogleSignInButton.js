@@ -1,15 +1,16 @@
 import React from "react";
 import { TouchableOpacity, Text, StyleSheet, Image, View } from "react-native";
 import { useAuth } from "../../context/AuthContext";
+import { colors } from "../../screens/theme";
 
 const GoogleSignInButton = ({ style }) => {
-  const { signInWithGoogle } = useAuth(); // Use the updated AuthContext method
+  const { signInWithGoogle } = useAuth();
 
   const handleSignIn = async () => {
     try {
-      await signInWithGoogle(); // Trigger Google Sign-In
+      await signInWithGoogle();
     } catch (error) {
-      console.error("Sign-in error:", error); // Log errors
+      console.error("Sign-in error:", error);
     }
   };
 
@@ -21,7 +22,7 @@ const GoogleSignInButton = ({ style }) => {
     >
       <View style={styles.buttonContent}>
         <Image
-          source={require("../../../assets/google.png")} // Google icon asset
+          source={require("../../../assets/google.png")}
           style={styles.icon}
           resizeMode="contain"
         />
@@ -33,12 +34,12 @@ const GoogleSignInButton = ({ style }) => {
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.background,
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 16,
     elevation: 2,
-    shadowColor: "#000",
+    shadowColor: colors.accent,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -56,7 +57,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   buttonText: {
-    color: "#1F2937",
+    color: colors.accent,
     fontSize: 16,
     fontWeight: "500",
   },

@@ -100,7 +100,7 @@ const NotificationBanner = () => {
 // Styles for the banner
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#7C3AED',  // Purple background color
+    backgroundColor: '#3aed76',  // Purple background color
     width: '100%',
     // Add subtle shadow effect
     shadowColor: '#000',

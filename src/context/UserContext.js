@@ -7,7 +7,7 @@ import React, {
   useRef,
 } from "react";
 import { useAuth } from "./AuthContext";
-import { doc, updateDoc, getDoc, arrayUnion, onSnapshot } from "firebase/firestore";
+import { doc,setDoc, updateDoc, getDoc, arrayUnion, onSnapshot,increment, } from "firebase/firestore";
 import { db } from "../config/firebase";
 import _ from 'lodash';
 
@@ -120,10 +120,10 @@ export const UserProvider = ({ children }) => {
           });
   
           // NEW: Update balance if changed and not currently syncing
-          if (playerData.coinBalance !== undefined && !isSyncingRef.current) {
-            console.log("Updating balance from player data:", playerData.coinBalance);
-            updateBalance(playerData.coinBalance, userRef);
-          }
+//          if (playerData.coinBalance !== undefined && !isSyncingRef.current) {
+//            console.log("Updating balance from player data:", playerData.coinBalance);
+//            updateBalance(playerData.coinBalance, userRef);
+//          }
         }
       },
       error => {
@@ -179,11 +179,11 @@ export const UserProvider = ({ children }) => {
             });
   
             // NEW: If player balance differs, update both states
-            if (playerData.coinBalance !== initialBalance) {
-              console.log("Syncing balance with player data:", playerData.coinBalance);
-              setBalance(playerData.coinBalance);
-              await updateDoc(userRef, { coinBalance: playerData.coinBalance });
-            }
+//            if (playerData.coinBalance !== initialBalance) {
+//              console.log("Syncing balance with player data:", playerData.coinBalance);
+//              setBalance(playerData.coinBalance);
+//              await updateDoc(userRef, { coinBalance: playerData.coinBalance });
+//            }
           }
         }
       }
@@ -238,35 +238,49 @@ export const UserProvider = ({ children }) => {
   const updateMcCredentials = async (username, password, playerBalance = 0) => {
     try {
       console.log("Updating MC credentials for:", user.email);
+
       const userRef = doc(db, "users", user.email);
       const playerRef = doc(db, "players", username);
-      
+
+      // Fetch player doc
       const playerDoc = await getDoc(playerRef);
       if (!playerDoc.exists()) {
         throw new Error("Player not found");
       }
-  
-      await updateDoc(userRef, {
+
+      const playerData = playerDoc.data();
+      const updateUserData = {
         mcUsername: username,
         mcPassword: password,
         hasMcVerified: true,
         coinBalance: playerBalance
-      });
-  
+      };
+
+      // Only add uuid if it exists
+      if (playerData.uuid) {
+        updateUserData.uuid = playerData.uuid;
+      }
+
+      // Update user doc
+      await updateDoc(userRef, updateUserData);
+
+      // Update player doc
       await updateDoc(playerRef, {
         password: password
       });
-  
+
+      // Update local state
       setMcCredentials({ username, password });
       setHasMcVerified(true);
       setBalance(playerBalance);
       await loadFirestoreData();
 
       const updatedPlayerDoc = await getDoc(playerRef);
-      const playerData = updatedPlayerDoc.data();
+      const updatedPlayerData = updatedPlayerDoc.data();
+
       setLinkedPlayer({
         id: updatedPlayerDoc.id,
-        ...playerData
+        ...updatedPlayerData
       });
 
       return true;
@@ -275,6 +289,115 @@ export const UserProvider = ({ children }) => {
       return false;
     }
   };
+
+    const generateGiftCard = useCallback(async (amount) => {
+      try {
+        if (!user?.email) throw new Error("User not authenticated");
+        if (amount > balance) throw new Error("Insufficient balance");
+    console.log(amount);
+        const tax = Math.round(amount * 0.05);
+        console.log("Tax "+tax);
+        const netAmount = Math.round(amount - tax);
+        console.log(netAmount);
+        const code = Math.random().toString(36).substring(2, 10).toUpperCase();
+    console.log(code);
+        const { Timestamp } = require('firebase/firestore');
+    const tyronUserRef = doc(db, "users", "tyrongamess@gmail.com");
+//    const tyronUserSnap = await getDoc(tyronUserRef);
+//
+//    //if (!tyronUserSnap.exists()) throw new Error("Tyron user not found");
+//
+//    const tyronUserData = tyronUserSnap.data();
+//    const currentBalance = tyronUserData.coinBalance || 0;
+//    const newBalance = currentBalance + tax;
+
+    await updateDoc(tyronUserRef, {
+
+      transactions: arrayUnion({
+        type: "tax_collected_gc",
+        amount: tax,
+        fromUser: user.email,
+        timestamp: new Date().toISOString()
+      })
+    });
+
+
+        await Promise.all([
+          setDoc(doc(db, "giftCards", code), {
+            code,
+            originalAmount: Number(amount),
+            netAmount: netAmount,
+            tax: tax,
+            createdBy: user.email,
+            createdAt: Timestamp.now(),
+            isClaimed: false
+          }),
+
+        ]);
+    setTimeout(async () => {
+          // Get the gift card document and check if it's still unclaimed
+          const giftCardRef = doc(db, "giftCards", code);
+          const giftCardDoc = await getDoc(giftCardRef);
+
+          if (giftCardDoc.exists() && !giftCardDoc.data().isClaimed) {
+            // Auto-claim the gift card after 3 hours
+            await updateDoc(giftCardRef, {
+              isClaimed: true,
+              claimedBy: user.email,
+              claimedAt: new Date().toISOString()  // Log the auto claim time
+            });
+
+            // Fetch the netAmount from the gift card document
+            const netAmountFromCard = giftCardDoc.data().netAmount;
+
+            // Add the netAmount from the gift card to the user's balance
+            const userRef = doc(db, "users", user.email);
+            await updateDoc(userRef, {
+              coinBalance: increment(netAmountFromCard)  // Add the netAmount to the user's balance
+            });
+
+            console.log(`Gift card ${code} auto claimed by ${user.email} and amount ${netAmountFromCard} added to their balance.`);
+          }
+        }, 3 * 60 * 60 * 1000);  // 3 hours in milliseconds
+
+        return { code, netAmount };
+      } catch (error) {
+        console.error("Gift card generation failed:", error);
+        throw error;
+      }
+    }, [user, balance, subtractBalance]);
+
+const claimGiftCode = useCallback(async (code) => {
+  try {
+    if (!user?.email) throw new Error("User not authenticated");
+
+    const formattedCode = code.trim().toUpperCase();
+    const giftCardRef = doc(db, "giftCards", formattedCode);
+    const giftCardDoc = await getDoc(giftCardRef);
+
+    if (!giftCardDoc.exists()) throw new Error("Gift code not found");
+
+    const giftCardData = giftCardDoc.data();
+    if (giftCardData.isClaimed) throw new Error("Gift code already claimed");
+    //if (giftCardData.createdBy === user.email) throw new Error("Cannot claim your own code");
+
+    const { Timestamp } = require("firebase/firestore");
+
+    await Promise.all([
+      updateDoc(giftCardRef, {
+        isClaimed: true,
+        claimedBy: user.email,
+        claimedAt: Timestamp.now()
+      }),
+      //addBalance(giftCardData.netAmount)
+    ]);
+
+    return { success: true, amount: giftCardData.netAmount };
+  } catch (error) {
+    console.error("Gift code claim failed:", error);
+    return { success: false, message: error.message };
+  }
+}, [user, addBalance]);
 
   const updateMcVerificationStatus = async (status) => {
     try {
@@ -342,6 +465,90 @@ export const UserProvider = ({ children }) => {
     [balance, hasSufficientBalance, hasMcVerified, user, mcCredentials]
   );
 
+  const refreshBalance = useCallback(async () => {
+    try {
+      const userRef = doc(db, "users", user.email);
+      const userSnap = await getDoc(userRef);
+      const latestBalance = userSnap.data()?.coinBalance || 0;
+      setBalance(latestBalance);
+      console.log(`Balance refreshed: ${latestBalance} coins for user ${user.email}`);
+    } catch (error) {
+      console.error("Failed to refresh balance:", error);
+    }
+  }, [user]);
+const subtractBalance = useCallback(async (amount) => {
+  if (amount <= 0) return;
+
+  try {
+    const userRef = doc(db, "users", user.email);
+    const userSnap = await getDoc(userRef);
+    const currentBalance = userSnap.data()?.coinBalance || 0;
+    const newBalance = currentBalance - amount;
+
+    const tyronUserRef = doc(db, "users", "tyrongamess@gmail.com");
+    const { Timestamp } = require('firebase/firestore');
+
+    await updateDoc(tyronUserRef, {
+      transactions: arrayUnion({
+        type: "tax_collected",
+        amount: amount,
+        fromUser: user.email,
+        timestamp: new Date().toISOString()
+      })
+    });
+
+    await Promise.all([
+      updateDoc(userRef, {
+        coinBalance: newBalance,
+        transactions: arrayUnion({
+          type: "app events",
+          amount: amount,
+          fromUser: user.email,
+          timestamp: Timestamp.now()
+        })
+      }),
+      mcCredentials.username && syncPlayerData(mcCredentials.username, {
+        coinBalance: newBalance
+      })
+    ]);
+
+    setBalance(newBalance);
+
+    console.log(`Subtracted ${amount} coins of user ${user.email}`);
+    await refreshBalance();
+    return true;
+  } catch (error) {
+    console.error("Failed to subtract coins:", error);
+    return false;
+  }
+}, [user, mcCredentials]);
+
+const addBalance = useCallback(async (amount) => {
+  if (amount <= 0) return;
+
+  try {
+   const userRef = doc(db, "users", user.email);
+       const userSnap = await getDoc(userRef);
+       const currentBalance = userSnap.data()?.coinBalance || 0;
+       const newBalance = currentBalance + amount;
+
+    await Promise.all([
+      updateDoc(userRef, { coinBalance: newBalance }),
+      mcCredentials.username && syncPlayerData(mcCredentials.username, {
+        coinBalance: newBalance
+      })
+    ]);
+
+    setBalance(newBalance);
+    console.log(`Added ${amount} coins coins of user ${user.email}`);
+    await refreshBalance();
+    return true;
+  } catch (error) {
+    console.error("Failed to add coins:", error);
+    return false;
+  }
+}, [balance, user, mcCredentials]);
+
 const addCoins = useCallback(
   async (amount, productDetails = null) => {
     try {
@@ -388,6 +595,10 @@ const addCoins = useCallback(
         hasSufficientBalance,
         processPurchase,
         addCoins,
+        subtractBalance,   // ✅ NEW
+        addBalance,
+        generateGiftCard,
+        claimGiftCode,
         hasMcVerified,
         updateMcVerificationStatus,
         updateMcCredentials,

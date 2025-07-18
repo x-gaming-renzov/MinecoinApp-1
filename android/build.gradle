@@ -6,8 +6,8 @@ buildscript {
         minSdkVersion = Integer.parseInt(findProperty('android.minSdkVersion') ?: '24')
         compileSdkVersion = Integer.parseInt(findProperty('android.compileSdkVersion') ?: '35')
         targetSdkVersion = Integer.parseInt(findProperty('android.targetSdkVersion') ?: '34')
-        kotlinVersion = findProperty('android.kotlinVersion') ?: '1.9.24'
-
+        kotlinVersion = '1.9.24'
+        kotlin_version = '1.9.24'
         ndkVersion = "26.1.10909125"
     }
     repositories {
@@ -16,11 +16,13 @@ buildscript {
     }
     dependencies {
         classpath 'com.google.gms:google-services:4.4.1'
-        classpath('com.android.tools.build:gradle')
+        classpath('com.android.tools.build:gradle:8.5.0')
         classpath('com.facebook.react:react-native-gradle-plugin')
-        classpath('org.jetbrains.kotlin:kotlin-gradle-plugin')
+        classpath('org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.24')
+
     }
 }
+//kotlin.gradle.plugin.version=1.9.24
 
 apply plugin: "com.facebook.react.rootproject"
 
@@ -38,5 +40,15 @@ allprojects {
         google()
         mavenCentral()
         maven { url 'https://www.jitpack.io' }
+    }
+}
+subprojects {
+    configurations.all {
+        resolutionStrategy {
+            force("org.jetbrains.kotlin:kotlin-stdlib:1.9.24",
+                    "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.24",
+                    "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.24")
+            force "androidx.compose.compiler:compiler:1.5.15"
+        }
     }
 }

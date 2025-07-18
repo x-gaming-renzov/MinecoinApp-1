@@ -13,7 +13,9 @@ const TransactionList = () => {
     return (
       <View style={styles.container}>
         <View style={styles.emptyStateCard}>
-          <Text style={styles.emptyStateText}>Please sign in to view your transactions</Text>
+          <Text style={styles.emptyStateText}>
+            Please sign in to view your transactions
+          </Text>
         </View>
       </View>
     );
@@ -30,29 +32,41 @@ const TransactionList = () => {
   }
 
   const formatTransaction = (transaction) => {
-    const title = transaction.type === 'purchase'
-      ? `Purchase: ${transaction.details?.title || 'Game Asset'}`
-      : 'Added Coins';
-    const amount = transaction.type === 'purchase'
-      ? `-${Math.abs(transaction.amount)}`
-      : `+${transaction.amount}`;
-    const date = format(new Date(transaction.timestamp), 'MMM dd, yyyy');
+    const title =
+      transaction.type === 'purchase'
+        ? `Purchase: ${transaction.details?.title || 'Game Asset'}`
+        : 'Added Coins';
+    const amount =
+      transaction.type === 'purchase'
+        ? `-${Math.abs(transaction.amount)}`
+        : `+${transaction.amount}`;
+
+    let rawDate = transaction.timestamp;
+    if (typeof rawDate === 'object' && rawDate?.seconds) {
+      rawDate = rawDate.seconds * 1000;
+    }
+    const date =
+      format(new Date(rawDate), 'MMM dd, yyyy') ||
+      format(new Date(transaction.timestamp), 'MMM dd, yyyy');
+
     return { title, amount, date, type: transaction.type };
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.heading}>Transaction History</Text>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {transactions.map((transaction, index) => {
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        {[...transactions].reverse().map((transaction, index) => {
           const { title, amount, date, type } = formatTransaction(transaction);
           return (
             <Animated.View key={transaction.id || index} style={styles.transactionCard}>
               <View style={styles.transactionContent}>
-                <View style={[
-                  styles.iconContainer,
-                  type === 'purchase' ? styles.redIconBg : styles.greenIconBg
-                ]}>
+                <View
+                  style={[
+                    styles.iconContainer,
+                    type === 'purchase' ? styles.redIconBg : styles.greenIconBg,
+                  ]}
+                >
                   {type === 'purchase' ? (
                     <MinusCircle size={24} color="#EF4444" />
                   ) : (
@@ -60,13 +74,17 @@ const TransactionList = () => {
                   )}
                 </View>
                 <View style={styles.detailsContainer}>
-                  <Text style={styles.transactionTitle}>{title}</Text>
+                  <Text style={styles.transactionTitle} numberOfLines={1} ellipsizeMode="tail">
+                    {title}
+                  </Text>
                   <Text style={styles.transactionDate}>{date}</Text>
                 </View>
-                <Text style={[
-                  styles.amount,
-                  type === 'purchase' ? styles.debitAmount : styles.creditAmount
-                ]}>
+                <Text
+                  style={[
+                    styles.amount,
+                    type === 'purchase' ? styles.debitAmount : styles.creditAmount,
+                  ]}
+                >
                   {amount} coins
                 </Text>
               </View>
@@ -81,34 +99,39 @@ const TransactionList = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#0a0a0a',
   },
   heading: {
     fontSize: 28,
-    fontWeight: '600',
-    color: '#1F2937',
+    fontWeight: '700',
+    color: '#3aed76',
     marginBottom: 24,
     marginHorizontal: 16,
   },
+  scrollContent: {
+    paddingBottom: 24,
+  },
   transactionCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#121212',
     borderRadius: 16,
     marginHorizontal: 16,
     marginBottom: 16,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    shadowColor: '#3aed76',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
   },
   transactionContent: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   iconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -120,22 +143,24 @@ const styles = StyleSheet.create({
   },
   detailsContainer: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: 16,
   },
   transactionTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#1F2937',
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#E0E0E0',
     marginBottom: 4,
   },
   transactionDate: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#9CA3AF',
   },
   amount: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
+    fontSize: 17,
+    fontWeight: '700',
+    marginLeft: 12,
+    minWidth: 90,
+    textAlign: 'right',
   },
   debitAmount: {
     color: '#EF4444',
@@ -153,7 +178,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#6B7280',
     textAlign: 'center',
-  }
+  },
 });
 
 export default TransactionList;

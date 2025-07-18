@@ -10,7 +10,7 @@ import {
   updateFCMToken,
   checkMaintenanceMode,
 } from "../config/firebase";
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc,runTransaction, Timestamp } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
 import { 
@@ -78,63 +78,67 @@ export const AuthProvider = ({ children }) => {
       if (userData) {
         console.log("Found stored user data");
         const parsedUser = JSON.parse(userData);
-        
+
         if (!parsedUser.email) {
           console.error("Invalid stored user data");
           await AsyncStorage.removeItem("user");
           return;
         }
-        
+
         console.log("Fetching fresh data from Firestore for:", parsedUser.email);
         let firestoreData = await getUserData(parsedUser.email);
-        
+
         if (firestoreData) {
-          // NEW: Check and give daily reward
+          // Check and give daily reward based on IST date
           if (firestoreData.hasMcVerified) {
-            const now = new Date().getTime();
+            const toISTDate = (timestamp) =>
+              new Date(timestamp).toLocaleDateString("en-GB", {
+                timeZone: "Asia/Kolkata",
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+              });
+
+            const now = Date.now();
             const lastReward = firestoreData.lastRewardTimestamp || 0;
-            const hoursSinceLastReward = (now - lastReward) / (1000 * 60 * 60);
-            
-            if (hoursSinceLastReward >= 24) {
+
+            if (toISTDate(now) !== toISTDate(lastReward)) {
               console.log("Giving daily reward");
-              const newBalance = (firestoreData.coinBalance || 0) + 10;
+              const newBalance = (firestoreData.coinBalance || 0) + 20;
               const userRef = doc(db, "users", parsedUser.email);
-              
-              // NEW: First update Firebase
+
               await updateDoc(userRef, {
                 coinBalance: newBalance,
-                lastRewardTimestamp: now
+                lastRewardTimestamp: now,
               });
-              
-              // NEW: Create new object for updated data
+
               firestoreData = {
                 ...firestoreData,
                 coinBalance: newBalance,
-                lastRewardTimestamp: now
+                lastRewardTimestamp: now,
               };
 
-              // NEW: Sync with player collection if MC verified
               if (firestoreData.mcUsername) {
                 const playerRef = doc(db, "players", firestoreData.mcUsername);
                 await updateDoc(playerRef, {
-                  coinBalance: newBalance
+                  coinBalance: newBalance,
                 });
               }
 
               console.log("Daily reward given, new balance:", newBalance);
             }
           }
-        
+
           const updatedUser = {
             ...parsedUser,
-            ...firestoreData
+            ...firestoreData,
           };
           console.log("User session restored successfully");
-          
+
           setUser(updatedUser);
           setIsLoggedIn(true);
           setHasMcVerification(firestoreData.hasMcVerified || false);
-          
+
           await AsyncStorage.setItem("user", JSON.stringify(updatedUser));
           setupNotifications(updatedUser.email);
         } else {
@@ -151,10 +155,11 @@ export const AuthProvider = ({ children }) => {
   };
 
 
+
   const signInWithGoogle = async () => {
     try {
       // NEW: Check maintenance mode first
-      const { isMaintenanceMode } = await checkMaintenanceMode();
+      const { isMaintenanceMode } = false ;
       if (isMaintenanceMode) {
         throw new Error("App is under maintenance");
     }
@@ -192,7 +197,7 @@ export const AuthProvider = ({ children }) => {
         
         if (hoursSinceLastReward >= 24) {
           console.log("Giving daily reward on sign in");
-          const newBalance = (firestoreData.coinBalance || 0) + 10;
+          const newBalance = (firestoreData.coinBalance || 0) + 15;
           const userRef = doc(db, "users", userData.email);
           
           await updateDoc(userRef, {

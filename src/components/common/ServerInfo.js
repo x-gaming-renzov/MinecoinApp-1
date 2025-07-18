@@ -1,20 +1,50 @@
-// ServerInfo.js
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, Clipboard } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Modal,
+  Clipboard,
+  Platform,
+  Animated,
+} from 'react-native';
 import { Copy, Check, X } from 'lucide-react-native';
 
 const SERVER_INFO = {
   ip: 'play.xgaming.club',
-  port: '19132'
+  port: '19132',
 };
 
 const ServerInfo = ({ visible, onClose }) => {
-  const [copiedJava, setCopiedJava] = React.useState(false);
-  const [copiedBedrock, setCopiedBedrock] = React.useState(false);
+  const [copiedJava, setCopiedJava] = useState(false);
+  const [copiedBedrock, setCopiedBedrock] = useState(false);
+  const [scale] = useState(new Animated.Value(0));
+
+  React.useEffect(() => {
+    if (visible) {
+      Animated.spring(scale, {
+        toValue: 1,
+        useNativeDriver: true,
+        bounciness: 8,
+        speed: 12,
+      }).start();
+    } else {
+      Animated.timing(scale, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [visible, scale]);
 
   const handleCopy = async (text, type) => {
     try {
-      await Clipboard.setString(text);
+      if (Platform.OS === 'web') {
+        navigator.clipboard.writeText(text);
+      } else {
+        await Clipboard.setString(text);
+      }
       if (type === 'java') {
         setCopiedJava(true);
         setTimeout(() => setCopiedJava(false), 2000);
@@ -27,162 +57,156 @@ const ServerInfo = ({ visible, onClose }) => {
     }
   };
 
+  const animatedStyle = {
+    transform: [{ scale }],
+  };
+
   return (
     <Modal
-      animationType="fade"
-      transparent={true}
+      animationType="none"
+      transparent
       visible={visible}
       onRequestClose={onClose}
     >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.mainTitle}>Server Details</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <X size={20} color="#6B7280" />
+      <View style={styles.overlay}>
+        <Animated.View style={[styles.container, animatedStyle]}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Server Details</Text>
+            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+              <X size={24} color="#6B7280" />
             </TouchableOpacity>
           </View>
 
-          {/* Java Edition Section */}
-          <View style={styles.sectionContainer}>
+          {/* Java Edition */}
+          <View style={styles.section}>
             <Text style={styles.sectionTitle}>Java Edition</Text>
-            <View style={styles.detailsContainer}>
-              <View style={styles.detail}>
-                <Text style={styles.label}>IP Address</Text>
-                <View style={styles.valueContainer}>
-                  <Text style={styles.value}>{SERVER_INFO.ip}</Text>
-                  <TouchableOpacity 
-                    style={styles.copyButton} 
-                    onPress={() => handleCopy(SERVER_INFO.ip, 'java')}
-                  >
-                    {copiedJava ? (
-                      <Check size={18} color="#10B981" />
-                    ) : (
-                      <Copy size={18} color="#7C3AED" />
-                    )}
-                  </TouchableOpacity>
-                </View>
+            <View style={styles.infoRow}>
+              <Text style={styles.label}>IP Address</Text>
+              <View style={styles.copyRow}>
+                <Text style={styles.value}>{SERVER_INFO.ip}</Text>
+                <TouchableOpacity
+                  onPress={() => handleCopy(SERVER_INFO.ip, 'java')}
+                  style={styles.copyBtn}
+                  activeOpacity={0.7}
+                >
+                  {copiedJava ? (
+                    <Check size={20} color="#10B981" />
+                  ) : (
+                    <Copy size={20} color="#3aed76" />
+                  )}
+                </TouchableOpacity>
               </View>
             </View>
           </View>
 
-          {/* Bedrock Edition Section */}
-          <View style={[styles.sectionContainer, styles.lastSection]}>
-            <Text style={styles.sectionTitle}>PE/Bedrock Edition</Text>
-            <View style={styles.detailsContainer}>
-              <View style={styles.detail}>
-                <Text style={styles.label}>IP Address</Text>
-                <View style={styles.valueContainer}>
-                  <Text style={styles.value}>{SERVER_INFO.ip}</Text>
-                  <TouchableOpacity 
-                    style={styles.copyButton} 
-                    onPress={() => handleCopy(SERVER_INFO.ip, 'bedrock')}
-                  >
-                    {copiedBedrock ? (
-                      <Check size={18} color="#10B981" />
-                    ) : (
-                      <Copy size={18} color="#7C3AED" />
-                    )}
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              <View style={styles.divider} />
-
-              <View style={styles.detail}>
-                <Text style={styles.label}>Port</Text>
-                <Text style={styles.value}>{SERVER_INFO.port}</Text>
+          {/* Bedrock Edition */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>PE / Bedrock Edition</Text>
+            <View style={styles.infoRow}>
+              <Text style={styles.label}>IP Address</Text>
+              <View style={styles.copyRow}>
+                <Text style={styles.value}>{SERVER_INFO.ip}</Text>
+                <TouchableOpacity
+                  onPress={() => handleCopy(SERVER_INFO.ip, 'bedrock')}
+                  style={styles.copyBtn}
+                  activeOpacity={0.7}
+                >
+                  {copiedBedrock ? (
+                    <Check size={20} color="#10B981" />
+                  ) : (
+                    <Copy size={20} color="#3aed76" />
+                  )}
+                </TouchableOpacity>
               </View>
             </View>
+
+            <View style={styles.infoRow}>
+              <Text style={styles.label}>Port</Text>
+              <Text style={styles.value}>{SERVER_INFO.port}</Text>
+            </View>
           </View>
-        </View>
+          <View style={styles.divider} />
+        </Animated.View>
       </View>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  modalOverlay: {
+  overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 16,
+    paddingHorizontal: 20,
   },
-  modalContent: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 20,
+  container: {
+    backgroundColor: '#121212',
+    borderRadius: 24,
+    paddingVertical: 28,
+    paddingHorizontal: 32,
     width: '100%',
-    maxWidth: 340,
-    shadowColor: '#7C3AED', // Match app theme
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 5,
+    maxWidth: 400,
+    shadowColor: '#3aed76',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 12,
   },
-  modalHeader: {
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 28,
   },
-  closeButton: {
-    padding: 4,
+  title: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#3aed76',
   },
-  mainTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#1F2937',
+  closeBtn: {
+    padding: 8,
   },
-  sectionContainer: {
-    marginBottom: 16,
+  section: {
+    marginBottom: 28,
   },
   lastSection: {
     marginBottom: 0,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#4B5563',
-    marginBottom: 8,
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#3aed76',
+    marginBottom: 18,
   },
-  detailsContainer: {
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    padding: 12,
-  },
-  detail: {
+  infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
+    marginBottom: 14,
   },
   label: {
-    fontSize: 14,
-    color: '#4B5563',
-    fontWeight: '500',
-  },
-  valueContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#A1A1AA',
   },
   value: {
-    fontSize: 14,
-    color: '#7C3AED',
-    fontWeight: '500',
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#E0E0E0',
   },
-  copyButton: {
-    padding: 4,
+  copyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  copyBtn: {
+    padding: 8,
   },
   divider: {
     height: 1,
-    backgroundColor: '#E5E7EB',
-    marginVertical: 8,
+    backgroundColor: '#3aed76',
+    marginVertical: 14,
   },
 });
 

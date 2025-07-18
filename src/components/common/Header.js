@@ -1,15 +1,16 @@
-// Header.js
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Image, ActivityIndicator } from "react-native"; // NEW: Added ActivityIndicator
+import { View, Text, TouchableOpacity, StyleSheet, Image, ActivityIndicator } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useUser } from "../../context/UserContext";
 import { useAuth } from "../../context/AuthContext";
 import { Server } from "lucide-react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import ServerInfo from "./ServerInfo";
+import { colors } from "../../screens/theme";
 
 const Header = () => {
   const navigation = useNavigation();
-  const { balance, isUpdating } = useUser(); // NEW: Added isUpdating from useUser
+  const { balance, isUpdating } = useUser();
   const { user, isLoggedIn } = useAuth();
   const [showServerInfo, setShowServerInfo] = useState(false);
 
@@ -29,25 +30,35 @@ const Header = () => {
   };
 
   return (
-    <View style={styles.mainContainer}>
+    <LinearGradient
+      colors={[colors.backgroundLight, colors.background]}
+      style={styles.mainContainer}
+    >
       <View style={styles.container}>
+        {/* Profile */}
         <TouchableOpacity
           style={styles.profileContainer}
           onPress={() => navigation.navigate("Profile")}
-          activeOpacity={0.8}
+          activeOpacity={0.85}
         >
-          {isLoggedIn && user?.photoURL ? (
-            <Image
-              source={{ uri: user.photoURL }}
-              style={styles.profileImage}
-            />
-          ) : (
-            <View style={styles.initialsContainer}>
-              <Text style={styles.initialsText}>{getInitials()}</Text>
-            </View>
-          )}
+          <LinearGradient
+            colors={[colors.accentDark, colors.accent]}
+            style={styles.profileGlow}
+          >
+            {isLoggedIn && user?.photoURL ? (
+              <Image
+                source={{ uri: user.photoURL }}
+                style={styles.profileImage}
+              />
+            ) : (
+              <View style={styles.initialsContainer}>
+                <Text style={styles.initialsText}>{getInitials()}</Text>
+              </View>
+            )}
+          </LinearGradient>
         </TouchableOpacity>
 
+        {/* Balance */}
         <TouchableOpacity
           style={styles.balanceContainer}
           onPress={() => {
@@ -59,15 +70,17 @@ const Header = () => {
           }}
           activeOpacity={0.9}
         >
-          <View style={styles.balanceContent}>
+          <LinearGradient
+            colors={[colors.accentGlow, 'rgba(16,185,129,0.08)']}
+            style={styles.balancePill}
+          >
             <Image
               source={require("../../../assets/rupee.png")}
               style={styles.coinIcon}
             />
-            {/* NEW: Added loading state handling */}
             {isUpdating ? (
               <View style={styles.loaderContainer}>
-                <ActivityIndicator size="small" color="#7C3AED" />
+                <ActivityIndicator size="small" color={colors.accent} />
               </View>
             ) : (
               <Text style={styles.balanceText}>
@@ -77,15 +90,21 @@ const Header = () => {
             <View style={styles.addButton}>
               <Text style={styles.addButtonText}>+</Text>
             </View>
-          </View>
+          </LinearGradient>
         </TouchableOpacity>
 
+        {/* Server Button */}
         <TouchableOpacity
-          style={[styles.serverButton, { marginLeft: 8 }]}
+          style={styles.serverButton}
           onPress={handleServerPress}
-          activeOpacity={0.8}
+          activeOpacity={0.85}
         >
-          <Server size={20} color="#7C3AED" />
+          <LinearGradient
+            colors={[colors.accentGlow, 'rgba(16,185,129,0.08)']}
+            style={styles.serverButtonInner}
+          >
+            <Server size={20} color={colors.accent} />
+          </LinearGradient>
         </TouchableOpacity>
       </View>
 
@@ -93,112 +112,144 @@ const Header = () => {
         visible={showServerInfo}
         onClose={() => setShowServerInfo(false)}
       />
-    </View>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
   mainContainer: {
-    backgroundColor: "#f2feff",
     paddingTop: 8,
+    paddingBottom: 2,
+    borderBottomLeftRadius: 18,
+    borderBottomRightRadius: 18,
+    overflow: "hidden",
   },
   container: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingBottom: 8,
+    paddingHorizontal: 17,
+    paddingBottom: 2,
   },
   profileContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    overflow: "hidden",
-    backgroundColor: "#FFFFFF",
-    elevation: 2,
-    shadowColor: "#7C3AED",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    overflow: "visible",
+    marginRight: 8,
   },
-  serverButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#FFFFFF",
-    justifyContent: "center",
+  profileGlow: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     alignItems: "center",
-    marginLeft: 12,
-    elevation: 2,
-    shadowColor: "#7C3AED",
+    justifyContent: "center",
+    shadowColor: colors.accent,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 6,
   },
   profileImage: {
-    width: "100%",
-    height: "100%",
+    width: 36,
+    height: 36,
     borderRadius: 18,
+    borderWidth: 2,
+    borderColor: colors.accent,
   },
   initialsContainer: {
-    width: "100%",
-    height: "100%",
-    backgroundColor: "#FFFFFF",
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.background,
     justifyContent: "center",
     alignItems: "center",
+    borderWidth: 2,
+    borderColor: colors.accent,
   },
   initialsText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#7C3AED",
+    fontSize: 18,
+    fontWeight: "700",
+    color: colors.accent,
+    letterSpacing: 1,
   },
   balanceContainer: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    elevation: 2,
-    shadowColor: "#7C3AED",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
     marginLeft: "auto",
+    marginRight: 8,
+    borderRadius: 20,
+    overflow: "hidden",
   },
-  balanceContent: {
+  balancePill: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     paddingVertical: 8,
-    gap: 6,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: colors.accentGlow,
+    shadowColor: colors.accent,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 4,
+    gap: 7,
   },
   coinIcon: {
     width: 20,
     height: 20,
     resizeMode: "contain",
   },
-  // NEW: Added loader container style
   loaderContainer: {
-    width: 60, // Match approximate width of balance text
+    width: 60,
     justifyContent: "center",
     alignItems: "center",
   },
   balanceText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#1F2937",
-    // minWidth: 60, // Ensure consistent width with loader
+    fontSize: 17,
+    fontWeight: "800",
+    color: colors.accent,
+    letterSpacing: 0.5,
   },
   addButton: {
-    backgroundColor: "#7C3AED",
+    backgroundColor: colors.accent,
     width: 22,
     height: 22,
     borderRadius: 11,
     justifyContent: "center",
     alignItems: "center",
+    marginLeft: 2,
+    shadowColor: colors.accent,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.18,
+    shadowRadius: 3,
+    elevation: 2,
   },
   addButtonText: {
-    color: "#FFFFFF",
+    color: colors.background,
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "900",
     lineHeight: 22,
+  },
+  serverButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    marginLeft: 8,
+    overflow: "hidden",
+  },
+  serverButtonInner: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1.5,
+    borderColor: colors.accentGlow,
+    shadowColor: colors.accent,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 4,
   },
 });
 

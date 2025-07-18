@@ -23,7 +23,7 @@ const QuestButton = ({ style }) => {
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: '#7C3AED',
+    backgroundColor: '#3aed76',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

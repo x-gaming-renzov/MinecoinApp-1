@@ -23,7 +23,7 @@
 //     <SafeAreaView style={styles.safeArea}>
 //       <View style={styles.container}>
 //         <View style={styles.content}>
-//           <ActivityIndicator size="large" color="#7C3AED" />
+//           <ActivityIndicator size="large" color="#3aed76" />
 //           <Text style={styles.processingText}>Processing your purchase...</Text>
 //         </View>
 //       </View>
@@ -49,7 +49,7 @@
 //   processingText: {
 //     marginTop: 16,
 //     fontSize: 16,
-//     color: '#1F2937',
+//     color: '#3aed76',
 //     textAlign: 'center',
 //     letterSpacing: 0.25,
 //     fontWeight: '500',

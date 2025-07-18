@@ -1,5 +1,12 @@
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Image,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { useAuth } from "../context/AuthContext";
@@ -8,17 +15,20 @@ import TransactionList from "../components/profile/TransactionList";
 import UserDetailsForm from "../components/profile/UserDetailsForm";
 import GoogleSignInButton from "../components/common/GoogleSignInButton";
 import { ArrowLeft } from "lucide-react-native";
+import { colors } from "./theme";
+
+// Import LinearGradient from expo-linear-gradient or react-native-linear-gradient
+import { LinearGradient } from "expo-linear-gradient";
 
 const ProfileScreen = () => {
   const navigation = useNavigation();
   const { isLoggedIn, signInWithGoogle, user } = useAuth();
   const [activeTab, setActiveTab] = useState("MC Verification");
 
-  // Keep all components mounted but control visibility
   const tabs = [
     { id: "MC Verification", component: <MCVerificationForm /> },
-    { id: "Transaction History", component: <TransactionList /> },
-    { id: "User Details", component: <UserDetailsForm /> }
+    { id: "Transactions", component: <TransactionList /> },
+    { id: "Events", component: <UserDetailsForm /> },
   ];
 
   if (!isLoggedIn) {
@@ -29,7 +39,7 @@ const ProfileScreen = () => {
             onPress={() => navigation.goBack()}
             style={styles.backButton}
           >
-            <ArrowLeft size={24} color="#7C3AED" />
+            <ArrowLeft size={24} color={colors.accent} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Profile</Text>
         </View>
@@ -43,83 +53,81 @@ const ProfileScreen = () => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
-          <ArrowLeft size={24} color="#7C3AED" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Profile</Text>
-      </View>
+    <LinearGradient
+      colors={[colors.backgroundLight, colors.background]} // Replace with your gradient colors
+      style={styles.gradient}
+    >
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+          >
+            <ArrowLeft size={24} color={colors.accent} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Profile</Text>
+        </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        <View style={styles.userInfoCard}>
-          <View style={styles.userInfoContent}>
-            <View style={styles.avatarContainer}>
-              {user?.photoURL ? (
-                <Image 
-                  source={{ uri: user.photoURL }} 
-                  style={styles.avatar}
-                />
-              ) : (
-                <View style={styles.avatarPlaceholder}>
-                  <Text style={styles.avatarText}>
-                    {user?.displayName?.charAt(0) || "U"}
-                  </Text>
-                </View>
-              )}
-            </View>
-            <View style={styles.userTextInfo}>
-              <Text style={styles.welcomeText}>
-                Welcome, {user?.displayName || "User"}
-              </Text>
-              {user?.email && (
-                <Text style={styles.emailText}>{user.email}</Text>
-              )}
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          <View style={styles.userInfoCard}>
+            <View style={styles.userInfoContent}>
+              <View style={styles.avatarContainer}>
+                {user?.photoURL ? (
+                  <Image source={{ uri: user.photoURL }} style={styles.avatar} />
+                ) : (
+                  <View style={styles.avatarPlaceholder}>
+                    <Text style={styles.avatarText}>
+                      {user?.displayName?.charAt(0) || "U"}
+                    </Text>
+                  </View>
+                )}
+              </View>
+              <View style={styles.userTextInfo}>
+                <Text style={styles.welcomeText}>
+                  Welcome, {user?.displayName || "User"}
+                </Text>
+                {user?.email && <Text style={styles.emailText}>{user.email}</Text>}
+              </View>
             </View>
           </View>
-        </View>
 
-        <View style={styles.tabContainer}>
-          {tabs.map((tab) => (
-            <TouchableOpacity
-              key={tab.id}
-              style={[
-                styles.tab,
-                activeTab === tab.id && styles.activeTab,
-              ]}
-              onPress={() => setActiveTab(tab.id)}
-            >
-              <Text
-                style={[
-                  styles.tabText,
-                  activeTab === tab.id && styles.activeTabText,
-                ]}
+          <View style={styles.tabContainer}>
+            {tabs.map((tab) => (
+              <TouchableOpacity
+                key={tab.id}
+                style={[styles.tab, activeTab === tab.id && styles.activeTab]}
+                onPress={() => setActiveTab(tab.id)}
+                activeOpacity={0.8}
               >
-                {tab.id}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+                <Text
+                  style={[styles.tabText, activeTab === tab.id && styles.activeTabText]}
+                >
+                  {tab.id}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
 
-        <View style={styles.content}>
-          {tabs.map(tab => (
-            <View key={tab.id} style={{ display: activeTab === tab.id ? 'flex' : 'none' }}>
-              {tab.component}
-            </View>
-          ))}
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+          <View style={styles.content}>
+            {tabs.map((tab) => (
+              <View key={tab.id} style={{ display: activeTab === tab.id ? "flex" : "none" }}>
+                {tab.component}
+              </View>
+            ))}
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
+  gradient: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    backgroundColor: "#f2feff",
+    backgroundColor: "transparent", // Important to keep transparent to show gradient
   },
   scrollView: {
     flex: 1,
@@ -128,9 +136,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     padding: 16,
-    backgroundColor: "#f2feff",
+    backgroundColor: "transparent",
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
+    borderBottomColor: colors.accent,
   },
   backButton: {
     padding: 8,
@@ -138,19 +146,21 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#1F2937",
+    fontSize: 22,
+    fontWeight: "700",
+    color: colors.accent,
   },
   userInfoCard: {
     margin: 16,
-    backgroundColor: "#7C3AED",
+    backgroundColor: colors.backgroundLight,
     borderRadius: 20,
-    shadowColor: "#7C3AED",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowColor: colors.accent,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 14,
+    elevation: 6,
+    borderWidth: 1,
+    borderColor: colors.accent,
   },
   userInfoContent: {
     flexDirection: "row",
@@ -158,41 +168,40 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   avatarContainer: {
-    marginRight: 12,
+    marginRight: 16,
   },
   avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     borderWidth: 2,
-    borderColor: "#FFFFFF",
+    borderColor: colors.accent,
   },
   avatarPlaceholder: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.accentGlow,
     justifyContent: "center",
     alignItems: "center",
   },
   avatarText: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#FFFFFF",
+    fontSize: 24,
+    fontWeight: "700",
+    color: colors.accent,
   },
   userTextInfo: {
     flex: 1,
   },
   welcomeText: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#FFFFFF",
-    marginBottom: 4,
+    fontSize: 20,
+    fontWeight: "700",
+    color: colors.accent,
+    marginBottom: 6,
   },
   emailText: {
-    fontSize: 14,
-    color: "#FFFFFF",
-    opacity: 0.9,
+    fontSize: 15,
+    color: colors.mutedText,
   },
   signInContainer: {
     flex: 1,
@@ -201,37 +210,40 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   message: {
-    fontSize: 16,
-    color: "#1F2937",
+    fontSize: 17,
+    color: colors.mutedText,
     marginBottom: 24,
     textAlign: "center",
   },
   tabContainer: {
     flexDirection: "row",
-    backgroundColor: "rgba(124, 58, 237, 0.1)",
+    backgroundColor: colors.backgroundLight,
     marginHorizontal: 16,
     borderRadius: 16,
     padding: 4,
-    marginBottom: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: colors.accent,
   },
   tab: {
     flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 10,
     borderRadius: 12,
+    alignItems: "center",
   },
   activeTab: {
-    backgroundColor: "#7C3AED",
+    backgroundColor: colors.accent,
   },
   tabText: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#7C3AED",
+    fontSize: 16,
+    fontWeight: "600",
+    color: colors.accent,
     textAlign: "center",
   },
   activeTabText: {
-    color: "#FFFFFF",
-    fontWeight: "600",
+    color: colors.background,
+    fontWeight: "700",
   },
   content: {
     flex: 1,

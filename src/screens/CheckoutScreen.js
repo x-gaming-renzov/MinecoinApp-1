@@ -55,7 +55,7 @@
 //           style={styles.backButton}
 //           onPress={() => navigation.goBack()}
 //         >
-//           <ArrowLeft size={24} color="#7C3AED" />
+//           <ArrowLeft size={24} color="#3aed76" />
 //         </TouchableOpacity>
 //         <Text style={styles.headerTitle}>Checkout</Text>
 //       </View>
@@ -107,14 +107,14 @@
 // const styles = StyleSheet.create({
 //   container: {
 //     flex: 1,
-//     backgroundColor: '#f2feff',
+//     backgroundColor: '#0a0a0a',
 //   },
 //   header: {
 //     flexDirection: 'row',
 //     alignItems: 'center',
 //     paddingHorizontal: 16,
 //     paddingVertical: 12,
-//     backgroundColor: '#f2feff',
+//     backgroundColor: '#0a0a0a',
 //     borderBottomWidth: 1,
 //     borderBottomColor: '#E5E7EB',
 //   },
@@ -122,17 +122,17 @@
 //     padding: 8,
 //     marginRight: 12,
 //     borderRadius: 12,
-//     backgroundColor: '#f2feff',
+//     backgroundColor: '#0a0a0a',
 //   },
 //   headerTitle: {
 //     fontSize: 20,
 //     fontWeight: '600',
-//     color: '#1F2937',
+//     color: '#3aed76',
 //   },
 //   content: {
 //     flex: 1,
 //     padding: 16,
-//     backgroundColor: '#f2feff',
+//     backgroundColor: '#0a0a0a',
 //   },
 //   card: {
 //     backgroundColor: '#FFFFFF',
@@ -145,7 +145,7 @@
 //   cardTitle: {
 //     fontSize: 18,
 //     fontWeight: '600',
-//     color: '#1F2937',
+//     color: '#3aed76',
 //     marginBottom: 20,
 //   },
 //   detailRow: {
@@ -159,7 +159,7 @@
 //   },
 //   value: {
 //     fontSize: 16,
-//     color: '#1F2937',
+//     color: '#3aed76',
 //   },
 //   divider: {
 //     height: 1,
@@ -174,15 +174,15 @@
 //   totalLabel: {
 //     fontSize: 16,
 //     fontWeight: '600',
-//     color: '#1F2937',
+//     color: '#3aed76',
 //   },
 //   totalAmount: {
 //     fontSize: 16,
 //     fontWeight: '600',
-//     color: '#7C3AED',
+//     color: '#3aed76',
 //   },
 //   payButton: {
-//     backgroundColor: '#7C3AED',
+//     backgroundColor: '#3aed76',
 //     borderRadius: 12,
 //     padding: 16,
 //     marginBottom: 16,

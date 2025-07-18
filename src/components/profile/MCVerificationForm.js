@@ -1,5 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, KeyboardAvoidingView, Platform, ActivityIndicator, Linking } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Modal,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
+  Linking,
+} from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import { Check, User, Lock, AlertCircle } from "lucide-react-native";
@@ -8,7 +19,6 @@ import { useUser } from "../../context/UserContext";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../config/firebase";
 
-// Added Discord server URL constant
 const DISCORD_URL = "https://discord.gg/a3KmcgCqDP";
 
 const SuccessModal = ({ visible, onClose, isUpdating = false }) => (
@@ -36,11 +46,13 @@ const SuccessModal = ({ visible, onClose, isUpdating = false }) => (
 
 const ValidationMessage = ({ message, type }) => (
   <View style={styles.validationContainer}>
-    <AlertCircle size={16} color={type === 'error' ? '#EF4444' : '#10B981'} />
-    <Text style={[
-      styles.validationText,
-      type === 'error' ? styles.errorText : styles.successText
-    ]}>
+    <AlertCircle size={16} color={type === "error" ? "#EF4444" : "#10B981"} />
+    <Text
+      style={[
+        styles.validationText,
+        type === "error" ? styles.errorText : styles.successText,
+      ]}
+    >
       {message}
     </Text>
   </View>
@@ -51,16 +63,6 @@ const MCVerificationForm = () => {
   const { user } = useAuth();
   const { updateMcCredentials, loadFirestoreData } = useUser();
   const [isLoading, setIsLoading] = useState(true);
-
-  // Added Discord handler function
-  const handleDiscordPress = async () => {
-    try {
-      await Linking.openURL(DISCORD_URL);
-    } catch (error) {
-      console.error("Error opening Discord link:", error);
-    }
-  };
-
   const [formState, setFormState] = useState({
     credentials: {
       username: "",
@@ -72,12 +74,12 @@ const MCVerificationForm = () => {
       isSubmitting: false,
       secureTextEntry: true,
       hasStoredCredentials: false,
-      verificationComplete: false
+      verificationComplete: false,
     },
     validation: {
       errors: {},
-      messages: {}
-    }
+      messages: {},
+    },
   });
 
   useEffect(() => {
@@ -86,20 +88,20 @@ const MCVerificationForm = () => {
       try {
         const userRef = doc(db, "users", user.email);
         const userDoc = await getDoc(userRef);
-        
+
         if (userDoc.exists() && userDoc.data().mcUsername) {
-          setFormState(prev => ({
+          setFormState((prev) => ({
             ...prev,
             credentials: {
               username: userDoc.data().mcUsername,
-              password: userDoc.data().mcPassword
+              password: userDoc.data().mcPassword,
             },
             uiState: {
               ...prev.uiState,
               hasStoredCredentials: true,
               isEditing: false,
-              verificationComplete: true
-            }
+              verificationComplete: true,
+            },
           }));
         }
       } catch (error) {
@@ -112,7 +114,11 @@ const MCVerificationForm = () => {
     checkStoredCredentials();
   }, [user.email]);
 
-  const verifyPlayerCredentials = async (username, password, isEditing = false) => {
+  const verifyPlayerCredentials = async (
+    username,
+    password,
+    isEditing = false
+  ) => {
     try {
       const playerRef = doc(db, "players", username);
       const playerDoc = await getDoc(playerRef);
@@ -134,9 +140,9 @@ const MCVerificationForm = () => {
   const handleSubmit = async () => {
     if (formState.uiState.isSubmitting) return;
 
-    setFormState(prev => ({
+    setFormState((prev) => ({
       ...prev,
-      uiState: { ...prev.uiState, isSubmitting: true }
+      uiState: { ...prev.uiState, isSubmitting: true },
     }));
 
     try {
@@ -149,13 +155,13 @@ const MCVerificationForm = () => {
       );
 
       if (!playerData) {
-        setFormState(prev => ({
+        setFormState((prev) => ({
           ...prev,
           validation: {
             ...prev.validation,
-            errors: { submit: "Invalid credentials. Please try again." }
+            errors: { submit: "Invalid credentials. Please try again." },
           },
-          uiState: { ...prev.uiState, isSubmitting: false }
+          uiState: { ...prev.uiState, isSubmitting: false },
         }));
         return;
       }
@@ -167,57 +173,65 @@ const MCVerificationForm = () => {
       );
 
       if (success) {
-        setFormState(prev => ({
+        setFormState((prev) => ({
           ...prev,
           uiState: {
             ...prev.uiState,
             showSuccess: true,
             hasStoredCredentials: true,
             verificationComplete: true,
-            isSubmitting: false
-          }
+            isSubmitting: false,
+          },
         }));
 
         await loadFirestoreData();
       } else {
-        setFormState(prev => ({
+        setFormState((prev) => ({
           ...prev,
           validation: {
             ...prev.validation,
-            errors: { submit: "Update failed. Please try again." }
+            errors: { submit: "Update failed. Please try again." },
           },
-          uiState: { ...prev.uiState, isSubmitting: false }
+          uiState: { ...prev.uiState, isSubmitting: false },
         }));
       }
     } catch (error) {
-      setFormState(prev => ({
+      setFormState((prev) => ({
         ...prev,
         validation: {
           ...prev.validation,
-          errors: { submit: "An error occurred. Please try again." }
+          errors: { submit: "An error occurred. Please try again." },
         },
-        uiState: { ...prev.uiState, isSubmitting: false }
+        uiState: { ...prev.uiState, isSubmitting: false },
       }));
     }
   };
 
   const handleModalClose = () => {
-    setFormState(prev => ({
+    setFormState((prev) => ({
       ...prev,
       uiState: {
         ...prev.uiState,
         showSuccess: false,
         hasStoredCredentials: true,
         verificationComplete: true,
-        isEditing: false
-      }
+        isEditing: false,
+      },
     }));
+  };
+
+  const handleDiscordPress = async () => {
+    try {
+      await Linking.openURL(DISCORD_URL);
+    } catch (error) {
+      console.error("Error opening Discord link:", error);
+    }
   };
 
   if (isLoading) {
     return (
       <View style={[styles.container, styles.loadingContainer]}>
-        <ActivityIndicator size="large" color="#7C3AED" />
+        <ActivityIndicator size="large" color="#3aed76" />
       </View>
     );
   }
@@ -230,37 +244,40 @@ const MCVerificationForm = () => {
             <Check size={28} color="#FFFFFF" />
           </View>
           <Text style={styles.verifiedTitle}>Account Verified</Text>
-          <Text style={styles.verifiedUsername}>{formState.credentials.username}</Text>
+          <Text style={styles.verifiedUsername}>
+            {formState.credentials.username}
+          </Text>
           <Text style={styles.verifiedDescription}>
             Your Minecraft account has been verified and is ready to use
           </Text>
-          {/* NEW: Add daily reward info */}
-<View style={styles.rewardsContainer}>
-  <View style={styles.rewardsHeader}>
-    <Text style={styles.rewardsTitle}>✨ Daily Rewards Activated</Text>
-  </View>
-  <View style={styles.rewardsInfo}>
-    <Text style={styles.rewardsBenefit}>
-      🎁 Get 10 free coins daily
-    </Text>
-    <Text style={styles.rewardsDescription}>
-      Simply open the app once every 24 hours to claim your reward automatically
-    </Text>
-  </View>
-</View>
-          {/* Added Discord Button */}
-          <TouchableOpacity 
+          <View style={styles.rewardsContainer}>
+            <View style={styles.rewardsHeader}>
+              <Text style={styles.rewardsTitle}>✨ Daily Rewards Activated</Text>
+            </View>
+            <View style={styles.rewardsInfo}>
+              <Text style={styles.rewardsBenefit}>
+                🎁 Get 20 free coins daily
+              </Text>
+              <Text style={styles.rewardsDescription}>
+                Simply open the app once every 24 hours to claim your reward
+                automatically
+              </Text>
+            </View>
+          </View>
+          <TouchableOpacity
             style={styles.discordButton}
             onPress={handleDiscordPress}
           >
             <Text style={styles.discordButtonText}>Join Our Discord</Text>
           </TouchableOpacity>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.editButton}
-            onPress={() => setFormState(prev => ({
-              ...prev,
-              uiState: { ...prev.uiState, isEditing: true }
-            }))}
+            onPress={() =>
+              setFormState((prev) => ({
+                ...prev,
+                uiState: { ...prev.uiState, isEditing: true },
+              }))
+            }
           >
             <Text style={styles.editButtonText}>Edit Account Details</Text>
           </TouchableOpacity>
@@ -285,31 +302,35 @@ const MCVerificationForm = () => {
       <View style={styles.formContent}>
         <Text style={styles.title}>Minecraft Account</Text>
         <Text style={styles.subtitle}>
-          {formState.uiState.isEditing 
-            ? "Update your account details" 
+          {formState.uiState.isEditing
+            ? "Update your account details"
             : "Enter your account details"}
         </Text>
 
         <View style={styles.formGroup}>
-          <View style={[
-            styles.inputWrapper,
-            formState.validation.errors.username && styles.inputError
-          ]}>
+          <View
+            style={[
+              styles.inputWrapper,
+              formState.validation.errors.username && styles.inputError,
+            ]}
+          >
             <View style={styles.inputContent}>
-              <User size={20} color="#7C3AED" />
+              <User size={20} color="#3aed76" />
               <TextInput
                 style={styles.input}
                 placeholder="Enter your Minecraft gamertag"
                 placeholderTextColor="#6B7280"
                 value={formState.credentials.username}
-                onChangeText={(text) => setFormState(prev => ({
-                  ...prev,
-                  credentials: { ...prev.credentials, username: text },
-                  validation: {
-                    ...prev.validation,
-                    errors: { ...prev.validation.errors, username: "" }
-                  }
-                }))}
+                onChangeText={(text) =>
+                  setFormState((prev) => ({
+                    ...prev,
+                    credentials: { ...prev.credentials, username: text },
+                    validation: {
+                      ...prev.validation,
+                      errors: { ...prev.validation.errors, username: "" },
+                    },
+                  }))
+                }
                 editable={editableUsername}
                 autoCapitalize="none"
               />
@@ -320,41 +341,47 @@ const MCVerificationForm = () => {
           </View>
 
           {formState.validation.errors.username && (
-            <ValidationMessage 
-              message={formState.validation.errors.username} 
-              type="error" 
+            <ValidationMessage
+              message={formState.validation.errors.username}
+              type="error"
             />
           )}
 
-          <View style={[
-            styles.inputWrapper,
-            formState.validation.errors.password && styles.inputError
-          ]}>
+          <View
+            style={[
+              styles.inputWrapper,
+              formState.validation.errors.password && styles.inputError,
+            ]}
+          >
             <View style={styles.inputContent}>
-              <Lock size={20} color="#7C3AED" />
+              <Lock size={20} color="#3aed76" />
               <TextInput
                 style={styles.input}
                 placeholder="Password used with /register"
                 placeholderTextColor="#6B7280"
                 secureTextEntry={formState.uiState.secureTextEntry}
                 value={formState.credentials.password}
-                onChangeText={(text) => setFormState(prev => ({
-                  ...prev,
-                  credentials: { ...prev.credentials, password: text },
-                  validation: {
-                    ...prev.validation,
-                    errors: { ...prev.validation.errors, password: "" }
-                  }
-                }))}
+                onChangeText={(text) =>
+                  setFormState((prev) => ({
+                    ...prev,
+                    credentials: { ...prev.credentials, password: text },
+                    validation: {
+                      ...prev.validation,
+                      errors: { ...prev.validation.errors, password: "" },
+                    },
+                  }))
+                }
               />
-              <TouchableOpacity 
-                onPress={() => setFormState(prev => ({
-                  ...prev,
-                  uiState: {
-                    ...prev.uiState,
-                    secureTextEntry: !prev.uiState.secureTextEntry
-                  }
-                }))}
+              <TouchableOpacity
+                onPress={() =>
+                  setFormState((prev) => ({
+                    ...prev,
+                    uiState: {
+                      ...prev.uiState,
+                      secureTextEntry: !prev.uiState.secureTextEntry,
+                    },
+                  }))
+                }
                 style={styles.showButton}
               >
                 <Text style={styles.showButtonText}>
@@ -365,33 +392,33 @@ const MCVerificationForm = () => {
           </View>
 
           {formState.validation.errors.password && (
-            <ValidationMessage 
-              message={formState.validation.errors.password} 
-              type="error" 
+            <ValidationMessage
+              message={formState.validation.errors.password}
+              type="error"
             />
           )}
         </View>
 
         {formState.validation.errors.submit && (
-          <ValidationMessage 
-            message={formState.validation.errors.submit} 
-            type="error" 
+          <ValidationMessage
+            message={formState.validation.errors.submit}
+            type="error"
           />
         )}
 
         <TouchableOpacity
           style={[
-            styles.submitButton, 
-            formState.uiState.isSubmitting && styles.submitButtonDisabled
+            styles.submitButton,
+            formState.uiState.isSubmitting && styles.submitButtonDisabled,
           ]}
           onPress={handleSubmit}
           disabled={formState.uiState.isSubmitting}
         >
           <Text style={styles.submitButtonText}>
-            {formState.uiState.isSubmitting 
-              ? "Processing..." 
-              : formState.uiState.isEditing 
-                ? "Update Account" 
+            {formState.uiState.isSubmitting
+              ? "Processing..."
+              : formState.uiState.isEditing
+                ? "Update Account"
                 : "Verify Account"}
           </Text>
         </TouchableOpacity>
@@ -403,19 +430,20 @@ const MCVerificationForm = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#0a0a0a",
   },
   formContent: {
     padding: 24,
   },
   title: {
     fontSize: 28,
-    fontWeight: '600',
-    color: '#1F2937',
+    fontWeight: "700",
+    color: "#3aed76",
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#6B7280',
+    fontSize: 17,
+    color: "#A1A1AA",
     marginBottom: 32,
   },
   formGroup: {
@@ -423,213 +451,221 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   inputWrapper: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: "#121212",
     borderRadius: 12,
-    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: "#3aed76",
+    overflow: "hidden",
   },
   inputContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 16,
     gap: 12,
   },
   input: {
     flex: 1,
-    fontSize: 15,
-    color: '#1F2937',
+    fontSize: 16,
+    color: "#3aed76",
     padding: 0,
   },
   showButton: {
     paddingHorizontal: 8,
   },
   showButtonText: {
-    color: '#7C3AED',
-    fontSize: 14,
-    fontWeight: '500',
+    color: "#3aed76",
+    fontSize: 15,
+    fontWeight: "600",
   },
   submitButton: {
-    backgroundColor: '#7C3AED',
+    backgroundColor: "#3aed76",
     borderRadius: 12,
     padding: 16,
-    alignItems: 'center',
+    alignItems: "center",
   },
   submitButtonDisabled: {
     opacity: 0.7,
   },
   submitButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+    color: "#0a0a0a",
+    fontSize: 17,
+    fontWeight: "700",
   },
   inputError: {
-    borderWidth: 1,
-    borderColor: '#EF4444',
+    borderColor: "#EF4444",
   },
   verifiedCard: {
     margin: 24,
     padding: 32,
     borderRadius: 20,
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    elevation: 2,
-    shadowColor: '#7C3AED',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    alignItems: "center",
+    backgroundColor: "#121212",
+    borderWidth: 1,
+    borderColor: "#3aed76",
+    shadowColor: "#3aed76",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 14,
+    elevation: 6,
   },
   verifiedIcon: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#10B981',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#3aed76",
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 24,
   },
   verifiedTitle: {
     fontSize: 24,
-    fontWeight: '600',
-    color: '#1F2937',
+    fontWeight: "700",
+    color: "#3aed76",
     marginBottom: 8,
   },
   verifiedUsername: {
     fontSize: 18,
-    color: '#4B5563',
+    color: "#A1A1AA",
     marginBottom: 16,
   },
   verifiedDescription: {
     fontSize: 16,
-    color: '#6B7280',
-    textAlign: 'center',
+    color: "#A1A1AA",
+    textAlign: "center",
     marginBottom: 32,
     lineHeight: 24,
   },
-  /* Added Discord button styles */
   discordButton: {
-    width: '100%',
-    backgroundColor: '#5865F2', // Discord brand color
+    backgroundColor: "#3aed76",
     borderRadius: 12,
     padding: 16,
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 16,
   },
   discordButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '500',
+    color: "#0a0a0a",
+    fontSize: 17,
+    fontWeight: "700",
   },
   editButton: {
-    width: '100%',
     borderWidth: 1,
-    borderColor: '#7C3AED',
+    borderColor: "#3aed76",
     borderRadius: 12,
     padding: 16,
-    alignItems: 'center',
+    alignItems: "center",
   },
   editButtonText: {
-    color: '#7C3AED',
-    fontSize: 16,
-    fontWeight: '500',
+    color: "#3aed76",
+    fontSize: 17,
+    fontWeight: "700",
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
     padding: 24,
   },
   modalContent: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#121212",
     borderRadius: 20,
     padding: 24,
-    width: '100%',
+    width: "100%",
     maxWidth: 320,
-    alignItems: 'center',
+    alignItems: "center",
   },
   successIcon: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#10B981',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#3aed76",
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 24,
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#1F2937',
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#3aed76",
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   modalDescription: {
     fontSize: 16,
-    color: '#6B7280',
-    textAlign: 'center',
+    color: "#A1A1AA",
+    textAlign: "center",
     marginBottom: 24,
     lineHeight: 24,
   },
   modalButton: {
-    width: '100%',
-    backgroundColor: '#7C3AED',
+    backgroundColor: "#3aed76",
     borderRadius: 12,
     padding: 16,
-    alignItems: 'center',
+    alignItems: "center",
   },
   modalButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '500',
+    color: "#0a0a0a",
+    fontSize: 17,
+    fontWeight: "700",
   },
   validationContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: 4,
     gap: 8,
   },
   validationText: {
     fontSize: 14,
+    color: "#A1A1AA",
   },
   errorText: {
-    color: '#EF4444',
+    color: "#EF4444",
   },
   successText: {
-    color: '#10B981',
+    color: "#10B981",
   },
   rewardsContainer: {
-    backgroundColor: '#F5F3FF',
+    backgroundColor: "#121212",
     borderRadius: 12,
     padding: 16,
     marginBottom: 24,
-    width: '100%',
+    width: "100%",
     borderWidth: 1,
-    borderColor: '#DDD6FE',
+    borderColor: "#3aed76",
   },
   rewardsHeader: {
     marginBottom: 8,
-    alignItems: 'center',
+    alignItems: "center",
   },
   rewardsTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#7C3AED',
-    textAlign: 'center',
+    fontWeight: "700",
+    color: "#3aed76",
+    textAlign: "center",
   },
   rewardsInfo: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   rewardsBenefit: {
     fontSize: 16,
-    color: '#4C1D95',
-    fontWeight: '500',
+    color: "#3aed76",
+    fontWeight: "600",
     marginBottom: 4,
   },
   rewardsDescription: {
-    fontSize: 14,
-    color: '#6B7280',
-    textAlign: 'center',
-    lineHeight: 20,
+    fontSize: 15,
+    color: "#A1A1AA",
+    textAlign: "center",
+    lineHeight: 22,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  lockIcon: {
+    opacity: 0.5,
   },
 });
 
-export default MCVerificationForm
+export default MCVerificationForm;

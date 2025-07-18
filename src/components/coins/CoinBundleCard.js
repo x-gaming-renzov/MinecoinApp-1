@@ -87,7 +87,7 @@
 //   if (loading) {
 //     return (
 //       <View style={styles.loadingContainer}>
-//         <ActivityIndicator size="large" color="#7C3AED" />
+//         <ActivityIndicator size="large" color="#3aed76" />
 //       </View>
 //     );
 //   }
@@ -140,7 +140,7 @@
 //     borderRadius: 12,
 //     padding: 16,
 //     // Subtle shadow
-//     shadowColor: '#7C3AED',
+//     shadowColor: '#3aed76',
 //     shadowOffset: { width: 0, height: 2 },
 //     shadowOpacity: 0.05,
 //     shadowRadius: 6,
@@ -193,11 +193,11 @@
 //   bundlePrice: {
 //     fontSize: 16,
 //     fontWeight: '600',
-//     color: '#7C3AED',
+//     color: '#3aed76',
 //     marginBottom: 16,
 //   },
 //   purchaseButton: {
-//     backgroundColor: '#7C3AED',
+//     backgroundColor: '#3aed76',
 //     paddingVertical: 12,
 //     borderRadius: 12,
 //     alignItems: 'center',

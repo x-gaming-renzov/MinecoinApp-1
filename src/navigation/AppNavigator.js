@@ -14,7 +14,7 @@ const AppNavigator = () => {
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-        cardStyle: { backgroundColor: '#f2feff' }
+        cardStyle: { backgroundColor: 'rgba(17, 24, 39, 0.95)' }
       }}
     >
       <Stack.Screen name="Main" component={MainScreen} />

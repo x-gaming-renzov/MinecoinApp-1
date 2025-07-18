@@ -2,6 +2,8 @@ import React from 'react';
 import { View, Text, SafeAreaView, StyleSheet, ActivityIndicator } from 'react-native';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../config/firebase';
+import Video from 'react-native-video';
+
 
 const MaintenanceCheck = ({ children }) => {
   const [isInMaintenance, setIsInMaintenance] = React.useState(false);
@@ -14,7 +16,7 @@ const MaintenanceCheck = ({ children }) => {
       const unsubscribe = onSnapshot(maintenanceRef, (doc) => {
         if (doc.exists()) {
           const data = doc.data();
-          setIsInMaintenance(data.isMaintenanceMode || false);  // Changed this line
+          setIsInMaintenance(false);  // Changed this line
           setMessage(data.message || 'App is under maintenance. Please try again later.');
         }
         setLoading(false);
@@ -34,7 +36,7 @@ const MaintenanceCheck = ({ children }) => {
     return (
       <View style={styles.container}>
         <View style={styles.loadingBox}>
-          <ActivityIndicator size="large" color="#7C3AED" />
+          <ActivityIndicator size="large" color="#3aed76" />
           <Text style={styles.loadingText}>Loading app...</Text>
         </View>
       </View>
@@ -43,8 +45,18 @@ const MaintenanceCheck = ({ children }) => {
 
   if (isInMaintenance) {
     return (
-      <View style={styles.container}>
-        <View style={styles.messageBox}>
+      <View style={styles.videoContainer}>
+        <Video
+                  source={require('../../../assets/maintaince.mp4')}
+                  repeat
+                  resizeMode="cover"
+                  style={StyleSheet.absoluteFill}
+                  muted={false}
+                  volume={10}
+                  rate={1.0}
+                  ignoreSilentSwitch="obey"
+                />
+        <View style={styles.overlay}>
           <Text style={styles.title}>Maintenance Mode</Text>
           <Text style={styles.message}>{message}</Text>
         </View>
@@ -62,11 +74,31 @@ const MaintenanceCheck = ({ children }) => {
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
-    backgroundColor: '#f2feff'
+    backgroundColor: '#0a0a0a'
   },
+  videoContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'black',
+    overflow: 'hidden'
+  },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    zIndex: 2
+  },
+
   container: {
     flex: 1,
-    backgroundColor: '#f2feff',
+    backgroundColor: '#0a0a0a',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20
@@ -77,7 +109,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: '#7C3AED',
+    color: '#3aed76',
     marginTop: 8
   },
   messageBox: {
@@ -98,12 +130,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#7C3AED',
+    color: '#3aed76',
     marginBottom: 12
   },
   message: {
     fontSize: 16,
-    color: '#4B5563',
+    color: '#3aed76',
     textAlign: 'center'
   }
 });
