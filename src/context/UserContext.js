@@ -7,8 +7,8 @@ import React, {
   useRef,
 } from "react";
 import { useAuth } from "./AuthContext";
-import { doc,setDoc, updateDoc, getDoc, arrayUnion, onSnapshot,increment, } from "firebase/firestore";
-import { db } from "../config/firebase";
+import { doc,setDoc, updateDoc, getDoc, arrayUnion, onSnapshot,increment, Timestamp } from "firebase/firestore";
+import { db,savePurchaseHistory } from "../config/firebase";
 import _ from 'lodash';
 
 const UserContext = createContext(null);
@@ -30,7 +30,9 @@ export const UserProvider = ({ children }) => {
   });
   const [linkedPlayer, setLinkedPlayer] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
-  
+  // NEW: Daily reward modal ko control karne ke liye state
+    const [dailyRewardInfo, setDailyRewardInfo] = useState({ show: false, amount: 0 });
+
   const lastBalanceRef = useRef(null);
   const isMountedRef = useRef(true);
   const isSyncingRef = useRef(false);
@@ -141,7 +143,34 @@ export const UserProvider = ({ children }) => {
       debouncedUpdateBalance.cancel();
     };
   }, [isLoggedIn, user, mcCredentials.username, debouncedUpdateBalance, updateBalance]);
-  
+  // NEW: Daily reward check karne aur dene ka function
+    const checkAndGrantDailyReward = async (userRef, userData) => {
+      // Firestore se 'lastDailyRewardClaimed' timestamp nikalein
+      const lastClaimed = userData.lastDailyRewardClaimed?.toDate();
+
+      // Aaj ki date (bina time ke)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // Agar reward pehle kabhi claim nahi hua, ya aakhri claim aaj se pehle ka hai
+      if (!lastClaimed || lastClaimed.getTime() < today.getTime()) {
+        const rewardAmount = 70;
+        try {
+          // Firestore mein balance badhayein aur naya timestamp set karein
+          await updateDoc(userRef, {
+            coinBalance: increment(rewardAmount),
+            lastDailyRewardClaimed: Timestamp.now(), // Abhi ka time set karein
+          });
+
+          // Local state mein balance update karein aur dialogue box dikhayein
+          setBalance(prev => prev + rewardAmount);
+          setDailyRewardInfo({ show: true, amount: rewardAmount });
+          console.log(`Daily reward of ${rewardAmount} coins granted to ${user.email}`);
+        } catch (error) {
+          console.error("Failed to grant daily reward:", error);
+        }
+      }
+    };
   const loadFirestoreData = async () => {
     try {
       console.log("Fetching user data for:", user.email);
@@ -158,12 +187,17 @@ export const UserProvider = ({ children }) => {
         setBalance(initialBalance);
         
         setTransactions(userData.transactions || []);
-        setHasMcVerified(userData.hasMcVerified || false);
+        const mcVerifiedStatus = userData.hasMcVerified || false; // Status variable mein store karein
+
+        setHasMcVerified(mcVerifiedStatus);
         setMcCredentials({
           username: userData.mcUsername || "",
           password: userData.mcPassword || "",
         });
-  
+  // NEW: Agar user MC-verified hai to daily reward check karein
+        if (mcVerifiedStatus) {
+          await checkAndGrantDailyReward(userRef, userData);
+        }
         // NEW: Check and sync with player data if verified
         if (userData.hasMcVerified && userData.mcUsername) {
           const playerRef = doc(db, "players", userData.mcUsername);
@@ -174,7 +208,6 @@ export const UserProvider = ({ children }) => {
             
             setLinkedPlayer({
               id: playerDoc.id,
-              coinBalance: playerData.coinBalance,
               ...playerData
             });
   
@@ -501,8 +534,8 @@ const subtractBalance = useCallback(async (amount) => {
       updateDoc(userRef, {
         coinBalance: newBalance,
         transactions: arrayUnion({
-          type: "app events",
-          amount: amount,
+          type: "purchase",
+          amount: -amount,
           fromUser: user.email,
           timestamp: Timestamp.now()
         })
@@ -548,7 +581,29 @@ const addBalance = useCallback(async (amount) => {
     return false;
   }
 }, [balance, user, mcCredentials]);
+const saveGameHistory = async (gameData) => {
+  try {
+    if (!user?.email) {
+      throw new Error('User not authenticated');
+    }
 
+    const historyEntry = {
+      ...gameData,
+      userEmail: user.email,
+      purchaseDate: new Date(),
+      timestamp: Date.now()
+    };
+
+    // Save to Firebase
+    await savePurchaseHistory(user.email, historyEntry);
+
+    console.log('✅ Game history saved successfully');
+    return historyEntry;
+  } catch (error) {
+    console.error('❌ Error saving game history:', error);
+    throw error;
+  }
+};
 const addCoins = useCallback(
   async (amount, productDetails = null) => {
     try {
@@ -586,13 +641,17 @@ const addCoins = useCallback(
   },
   [balance, user, mcCredentials]
 );  
-  
+  const dismissDailyReward = () => {
+      setDailyRewardInfo({ show: false, amount: 0 });
+    };
   return (
     <UserContext.Provider
       value={{
         balance,
         transactions,
         hasSufficientBalance,
+        dailyRewardInfo,
+        dismissDailyReward,
         processPurchase,
         addCoins,
         subtractBalance,   // ✅ NEW
@@ -605,6 +664,7 @@ const addCoins = useCallback(
         mcCredentials,
         linkedPlayer,
         loadFirestoreData,
+        saveGameHistory,
         isUpdating,  // NEW: Expose loading state
       }}
     >

@@ -116,11 +116,72 @@ const getUserData = async (email) => {
     throw error;
   }
 };
+const getRocketRideConfig = async () => {
+  try {
+    const configDoc = await getDoc(doc(db, "appConfig", "rocketRideConfig"));
+    if (configDoc.exists()) {
+      return configDoc.data();
+    } else {
+      console.warn("rocketRideConfig not found in appconfig.");
+      return null;
+    }
+  } catch (error) {
+    console.error("Error fetching rocket config:", error);
+    return null;
+  }
+};
 
+// In your firebase config file (e.g., firebase.js)
+const initRocketRideConfig = async () => {
+  console.log("🚀 Starting initRocketRideConfig...");
+
+  const configRef = doc(db, "appConfig", "rocketRideConfig");
+
+  const defaultConfig = {
+    minBet: 50,
+    maxBet: 7000,
+    maxMultiplier: 7.0,
+    houseEdge: 0.08,
+    clickProtectionDelay: 600,
+    minGameDuration: 1200,
+    starCount: 90
+  };
+
+  try {
+    console.log("📖 Checking if config exists...");
+    const configSnap = await getDoc(configRef);
+
+    if (!configSnap.exists()) {
+      console.log("❌ Config doesn't exist, creating...");
+      await setDoc(configRef, defaultConfig);
+      console.log("✅ rocketRideConfig created with default values:", defaultConfig);
+    } else {
+      console.log("✅ Config exists:", configSnap.data());
+      const existingData = configSnap.data();
+      const updates = {};
+
+      for (const key in defaultConfig) {
+        if (!(key in existingData)) {
+          updates[key] = defaultConfig[key];
+        }
+      }
+
+      if (Object.keys(updates).length > 0) {
+        await updateDoc(configRef, updates);
+        console.log("🔄 Updated missing fields:", updates);
+      } else {
+        console.log("✅ All fields already exist");
+      }
+    }
+  } catch (error) {
+    console.error("❌ Error initializing rocketRideConfig:", error);
+    console.error("Error details:", error.message);
+  }
+};
 const fetchGameAssets = async () => {
   try {
     console.log("Fetching game assets...");
-    const gameAssetsRef = collection(db, "gameAssets");
+    const gameAssetsRef = collection(db, "gamesAssets");
     const snapshot = await getDocs(gameAssetsRef);
     return snapshot.docs.map(doc => ({
       id: doc.id,
@@ -309,5 +370,7 @@ export {
   updateFCMToken,
   getLatestNotification, // Add new export
   checkMaintenanceMode,  // NEW: Export maintenance check
-  fetchGameEvents, // Add this new export
+  fetchGameEvents,
+  initRocketRideConfig,
+  getRocketRideConfig,// Add this new export
 };

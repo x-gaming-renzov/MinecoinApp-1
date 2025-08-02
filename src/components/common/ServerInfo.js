@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Animated,
 } from 'react-native';
 import { Copy, Check, X } from 'lucide-react-native';
+import { colors } from '../../screens/theme'; // Import theme colors
 
 const SERVER_INFO = {
   ip: 'play.xgaming.club',
@@ -19,9 +20,9 @@ const SERVER_INFO = {
 const ServerInfo = ({ visible, onClose }) => {
   const [copiedJava, setCopiedJava] = useState(false);
   const [copiedBedrock, setCopiedBedrock] = useState(false);
-  const [scale] = useState(new Animated.Value(0));
+  const scale = useRef(new Animated.Value(0)).current;
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (visible) {
       Animated.spring(scale, {
         toValue: 1,
@@ -41,10 +42,11 @@ const ServerInfo = ({ visible, onClose }) => {
   const handleCopy = async (text, type) => {
     try {
       if (Platform.OS === 'web') {
-        navigator.clipboard.writeText(text);
+        await navigator.clipboard.writeText(text);
       } else {
         await Clipboard.setString(text);
       }
+
       if (type === 'java') {
         setCopiedJava(true);
         setTimeout(() => setCopiedJava(false), 2000);
@@ -73,7 +75,7 @@ const ServerInfo = ({ visible, onClose }) => {
           <View style={styles.header}>
             <Text style={styles.title}>Server Details</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <X size={24} color="#6B7280" />
+              <X size={24} color={colors.mutedText} />
             </TouchableOpacity>
           </View>
 
@@ -90,9 +92,9 @@ const ServerInfo = ({ visible, onClose }) => {
                   activeOpacity={0.7}
                 >
                   {copiedJava ? (
-                    <Check size={20} color="#10B981" />
+                    <Check size={20} color={colors.success} />
                   ) : (
-                    <Copy size={20} color="#3aed76" />
+                    <Copy size={20} color={colors.accent} />
                   )}
                 </TouchableOpacity>
               </View>
@@ -112,9 +114,9 @@ const ServerInfo = ({ visible, onClose }) => {
                   activeOpacity={0.7}
                 >
                   {copiedBedrock ? (
-                    <Check size={20} color="#10B981" />
+                    <Check size={20} color={colors.success} />
                   ) : (
-                    <Copy size={20} color="#3aed76" />
+                    <Copy size={20} color={colors.accent} />
                   )}
                 </TouchableOpacity>
               </View>
@@ -141,17 +143,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   container: {
-    backgroundColor: '#121212',
+    backgroundColor: colors.backgroundLight,
     borderRadius: 24,
     paddingVertical: 28,
     paddingHorizontal: 32,
     width: '100%',
     maxWidth: 400,
-    shadowColor: '#3aed76',
+    shadowColor: colors.accent,
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.3,
     shadowRadius: 20,
     elevation: 12,
+    borderWidth: 1,
+    borderColor: colors.accent,
   },
   header: {
     flexDirection: 'row',
@@ -162,7 +166,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#3aed76',
+    color: colors.accent,
   },
   closeBtn: {
     padding: 8,
@@ -170,13 +174,10 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 28,
   },
-  lastSection: {
-    marginBottom: 0,
-  },
   sectionTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#3aed76',
+    color: colors.accent,
     marginBottom: 18,
   },
   infoRow: {
@@ -188,12 +189,12 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#A1A1AA',
+    color: colors.mutedText,
   },
   value: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#E0E0E0',
+    color: '#E0E0E0', // A bright neutral color for readability
   },
   copyRow: {
     flexDirection: 'row',
@@ -205,8 +206,9 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: '#3aed76',
+    backgroundColor: colors.accent,
     marginVertical: 14,
+    opacity: 0.5,
   },
 });
 

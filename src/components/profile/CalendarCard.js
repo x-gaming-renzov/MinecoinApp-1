@@ -21,6 +21,7 @@ import { useUser } from '../../context/UserContext';
 import { savePurchaseHistory } from '../../config/firebase';
 import InsufficientBalance from '../games/InsufficientBalanceModal';
 import { Easing } from 'react-native';
+import { colors } from '../../screens/theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const BOX_SIZE = (SCREEN_WIDTH * 0.85 - 72) / 3;
@@ -28,9 +29,9 @@ const BOX_MARGIN = 6;
 const NUM_BOXES = 9;
 const GRID_SIZE = 3;
 
-const VISIBLE_SHUFFLE_STEPS = 5; // fewer visible shuffles
-const INTERNAL_SHUFFLE_STEPS = 8; // more internal shuffles
-const SHUFFLE_STEP_DELAY = 4; // 5ms delay for visible animation (very fast)
+const VISIBLE_SHUFFLE_STEPS = 5;
+const INTERNAL_SHUFFLE_STEPS = 8;
+const SHUFFLE_STEP_DELAY = 4;
 
 const getGridPosition = (index) => {
   const row = Math.floor(index / GRID_SIZE);
@@ -42,10 +43,10 @@ const getGridPosition = (index) => {
 };
 
 const CalendarCard = () => {
+  // State variables
   const [inputAmount, setInputAmount] = useState('');
   const [gameAssets, setGameAssets] = useState([]);
   const [showBoxSelection, setShowBoxSelection] = useState(false);
-  const [boxes, setBoxes] = useState([]);
   const [selectedBox, setSelectedBox] = useState(null);
   const [showReward, setShowReward] = useState(false);
   const [reward, setReward] = useState(null);
@@ -53,10 +54,7 @@ const CalendarCard = () => {
   const [showInsufficientBalance, setShowInsufficientBalance] = useState(false);
   const [maxReward, setMaxReward] = useState(0);
   const [error, setError] = useState(null);
-  const [gameSessionAssets, setGameSessionAssets] = useState([]);
   const [isStartingGame, setIsStartingGame] = useState(false);
-  const [showInitialItems, setShowInitialItems] = useState(true);
-  const [readyToShuffle, setReadyToShuffle] = useState(false);
   const [isShuffling, setIsShuffling] = useState(false);
   const [shuffleOrder, setShuffleOrder] = useState([...Array(NUM_BOXES).keys()]);
   const anims = useRef([...Array(NUM_BOXES)].map(() => new Animated.ValueXY(getGridPosition(0)))).current;
@@ -65,7 +63,10 @@ const CalendarCard = () => {
   const [showRewardText, setShowRewardText] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  const { isLoggedIn, user, hasMcVerification } = useAuth();
+  // State to hold the content of boxes once they are opened
+  const [openedBoxes, setOpenedBoxes] = useState({});
+
+  const { isLoggedIn, user } = useAuth();
   const { balance, subtractBalance, addBalance, hasSufficientBalance } = useUser();
 
   // Config state fetched from Firebase
@@ -80,176 +81,141 @@ const CalendarCard = () => {
     assetCountRange: [4, 7],
     assetMaxPriceMultiplier: 3,
   });
-
   const [loadingConfig, setLoadingConfig] = useState(true);
 
+  // Fetch chances config from Firebase
   useEffect(() => {
-    let mounted = true;
-
     const fetchConfig = async () => {
       try {
         const docRef = doc(db, 'appConfig', 'luckyBoxChances');
         const docSnap = await getDoc(docRef);
-
         if (docSnap.exists()) {
-          if (mounted) {
-            const data = docSnap.data();
-            const config = {
-              assetChance: data.assetChance ?? 0.6,
-              coinChances: data.coinChances ?? [
-                { range: [0, 1], chance: 0.925 },
-                { range: [2, 4], chance: 0.025 },
-                { range: [4, 5], chance: 0.01 },
-              ],
-              maxRewardMultiplier: data.maxRewardMultiplier ?? 5,
-              assetCountRange: data.assetCountRange ?? [4, 7],
-              assetMaxPriceMultiplier: data.assetMaxPriceMultiplier ?? 3,
-            };
-            setChancesConfig(config);
-          }
-        } else {
-          if (mounted) {
-            setChancesConfig({
-              assetChance: 0.6,
-              coinChances: [
-                { range: [0, 1], chance: 0.925 },
-                { range: [2, 4], chance: 0.025 },
-                { range: [4, 5], chance: 0.01 },
-              ],
-              maxRewardMultiplier: 5,
-              assetCountRange: [4, 7],
-              assetMaxPriceMultiplier: 3,
-            });
-          }
+          const data = docSnap.data();
+          setChancesConfig({
+            assetChance: data.assetChance ?? 0.6,
+            coinChances: data.coinChances ?? [],
+            maxRewardMultiplier: data.maxRewardMultiplier ?? 5,
+            assetCountRange: data.assetCountRange ?? [4, 7],
+            assetMaxPriceMultiplier: data.assetMaxPriceMultiplier ?? 3,
+          });
         }
       } catch (error) {
         console.error('Failed to fetch chances config:', error);
       } finally {
-        if (mounted) setLoadingConfig(false);
+        setLoadingConfig(false);
       }
     };
-
     fetchConfig();
-
-    return () => {
-      mounted = false;
-    };
   }, []);
 
-  // Fetch assets only once
+  // Fetch all game assets once
   useEffect(() => {
-    let mounted = true;
     const fetchAssets = async () => {
       try {
-        const snapshot = await getDocs(query(collection(db, 'gameAssets'), orderBy('price', 'asc')));
-        const assets = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        if (mounted) setGameAssets(assets);
+        const snapshot = await getDocs(query(collection(db, 'gamesAssets'), orderBy('price', 'asc')));
+        const assets = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        setGameAssets(assets);
       } catch (error) {
         setError('Failed to load game assets');
       }
     };
     fetchAssets();
-    return () => {
-      mounted = false;
-    };
   }, []);
 
-  // Defensive parse inputAmount helper
   const parsedAmount = useMemo(() => {
     const val = parseInt(inputAmount);
     return Number.isNaN(val) ? 0 : val;
   }, [inputAmount]);
 
-  // Memoized asset filtering using dynamic max price multiplier
+  // Filter assets based on the bet amount
   const filteredAssets = useMemo(() => {
     if (!parsedAmount || !gameAssets.length) return [];
     const maxPrice = parsedAmount * (chancesConfig.assetMaxPriceMultiplier ?? 3);
-    const filtered = gameAssets.filter(
+    return gameAssets.filter(
       (asset) => asset.price && asset.price <= maxPrice && asset.price >= parsedAmount * 0.5
     );
-    const [minAssets, maxAssets] = chancesConfig.assetCountRange ?? [4, 7];
-    const targetCount = Math.min(
-      filtered.length,
-      Math.floor(Math.random() * (maxAssets - minAssets + 1)) + minAssets
-    );
-    const shuffled = [...filtered].sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, targetCount);
   }, [gameAssets, parsedAmount, chancesConfig]);
 
-  // Generate boxes using dynamic chances
-  const generateBoxes = (amount, assets) => {
-    const newBoxes = [];
-
-    // Adjust chances if no assets available
-    let assetChance = chancesConfig.assetChance ?? 0.6;
-    let coinChances = chancesConfig.coinChances ?? [
-      { range: [0, 1], chance: 0.925 },
-      { range: [2, 4], chance: 0.025 },
-      { range: [4, 5], chance: 0.01 },
-    ];
-
-    if (assets.length === 0) {
-      // Combine assetChance into first coin chance
-      const combinedFirstChance = (coinChances[0].chance ?? 0) + assetChance;
-      coinChances = [
-        { ...coinChances[0], chance: combinedFirstChance },
-        ...coinChances.slice(1),
-      ];
-      assetChance = 0; // no assets possible
+  // SECURE: Generates a SINGLE reward based on luck. Called ON-CLICK.
+  const generateSingleReward = (amount, availableAssets, chances) => {
+    let assetChance = chances.assetChance ?? 0.6;
+    if (availableAssets.length === 0) {
+      assetChance = 0; // No assets possible if none are available
     }
 
-    for (let i = 0; i < NUM_BOXES; i++) {
-      let content;
-      const randomValue = Math.random();
+    const randomValue = Math.random();
+    if (randomValue < assetChance) {
+      // Asset win
+      const randomAsset = availableAssets[Math.floor(Math.random() * availableAssets.length)];
+      return {
+        type: 'asset',
+        value: randomAsset.title,
+        imageUrl: randomAsset.imageUrl,
+        assetId: randomAsset.id,
+        originalPrice: randomAsset.price,
+        achievementText: randomAsset.achievementText || '',
+      };
+    } else {
+      // Coin win
+      const coinRandom = Math.random();
+      let cumulativeChance = 0;
+      let selectedRange = chances.coinChances[0]?.range ?? [0, 1];
 
-      if (assets.length > 0 && randomValue < assetChance) {
-        const randomAsset = assets[Math.floor(Math.random() * assets.length)];
-        content = {
-          type: 'asset',
-          value: randomAsset.title,
-          imageUrl: randomAsset.imageUrl,
-          assetId: randomAsset.id,
-          originalPrice: randomAsset.price,
-          achievementText: randomAsset.achievementText || '',
-        };
-      } else {
-        // Coins chance
-        const coinRandom = Math.random();
-        let cumulativeChance = 0;
-        let selectedRange = [0, 1]; // default 0-1x
-
-        for (const tier of coinChances) {
-          cumulativeChance += tier.chance;
-          if (coinRandom < cumulativeChance) {
-            selectedRange = tier.range;
-            break;
-          }
+      for (const tier of chances.coinChances) {
+        cumulativeChance += tier.chance;
+        if (coinRandom < cumulativeChance) {
+          selectedRange = tier.range;
+          break;
         }
-
-        const minMultiplier = selectedRange[0];
-        const maxMultiplier = selectedRange[1];
-        const multiplier = Math.random() * (maxMultiplier - minMultiplier) + minMultiplier;
-        const coinReward = Math.floor(amount * multiplier);
-
-        content = {
-          type: 'coins',
-          value: coinReward,
-        };
       }
-
-      newBoxes.push({
-        id: i,
-        content,
-        opened: false,
-      });
+      const [minMultiplier, maxMultiplier] = selectedRange;
+      const multiplier = Math.random() * (maxMultiplier - minMultiplier) + minMultiplier;
+      return {
+        type: 'coins',
+        value: Math.floor(amount * multiplier),
+      };
     }
-    return newBoxes.sort(() => Math.random() - 0.5);
   };
 
-  // Animate all boxes to their new positions with easing for smoothness
+  const handleStartGame = async () => {
+    let amount = parsedAmount;
+    if (!amount || amount < 50) {
+      setError('Please enter a valid amount (minimum 50 coins)');
+      return;
+    }
+    if (amount > 7000) amount = 7000;
+    if (!hasSufficientBalance(amount)) {
+      setShowInsufficientBalance(true);
+      return;
+    }
+
+    setError(null);
+    setIsStartingGame(true);
+    try {
+      await subtractBalance(amount);
+
+      setMaxReward(amount * (chancesConfig.maxRewardMultiplier ?? 5));
+      setShuffleOrder([...Array(NUM_BOXES).keys()]);
+      [...Array(NUM_BOXES).keys()].forEach((idx, i) => anims[idx].setValue(getGridPosition(i)));
+
+      setShowBoxSelection(true);
+      setIsStartingGame(false);
+      setSelectedBox(null);
+      setReward(null);
+      setRewardGiven(false);
+      setShowRewardText(false);
+      setOpenedBoxes({}); // Reset opened boxes
+
+      // Auto-start shuffling
+      setIsShuffling(true);
+      doShuffleAnimation(0, shuffleOrder);
+    } catch (err) {
+      setError('Failed to start game. Try again.');
+      setIsStartingGame(false);
+      await addBalance(amount);
+    }
+  };
+
   const animateBoxesToOrder = (order, callback) => {
     const animations = order.map((boxIdx, gridIdx) => {
       const pos = getGridPosition(gridIdx);
@@ -263,100 +229,29 @@ const CalendarCard = () => {
     Animated.parallel(animations).start(callback);
   };
 
-  // Start game
-  const handleStartGame = async () => {
-    let amount = parsedAmount;
-    if (!amount || amount < 50) {
-      setError('Please enter a valid amount (minimum 50 coins)');
-      return;
-    }
-    if (amount > 7000) amount = 7000;
-    if (!isLoggedIn) {
-      setError('Please login to play');
-      return;
-    }
-    if (!hasSufficientBalance(amount)) {
-      setShowInsufficientBalance(true);
-      return;
-    }
-    setError(null);
-    setIsStartingGame(true);
-    try {
-      await subtractBalance(amount);
-      const [minAssets, maxAssets] = chancesConfig.assetCountRange ?? [4, 7];
-      let assetCount = Math.max(minAssets, Math.min(maxAssets, filteredAssets.length));
-      const sessionAssets = filteredAssets.slice(0, assetCount);
-      setGameSessionAssets(sessionAssets);
-      setMaxReward(amount * (chancesConfig.maxRewardMultiplier ?? 5));
-      let initialBoxes = generateBoxes(amount, sessionAssets);
-      setBoxes(initialBoxes);
-      setShuffleOrder([...Array(NUM_BOXES).keys()]);
-      // Set initial positions
-      [...Array(NUM_BOXES).keys()].forEach((idx, i) => {
-        anims[idx].setValue(getGridPosition(i));
-      });
-      setShowInitialItems(true);
-      setShowBoxSelection(true);
-      setIsStartingGame(false);
-      setSelectedBox(null);
-      setReward(null);
-      setRewardGiven(false);
-      setShowRewardText(false);
-    } catch (err) {
-      setError('Failed to start game. Try again.');
-      setIsStartingGame(false);
-      await addBalance(amount);
-    }
-  };
-
-  // SHUFFLE ANIMATION
-  const handleReadyClick = () => {
-    setReadyToShuffle(true);
-    setIsShuffling(true);
-    setShowInitialItems(false);
-    doShuffleAnimation(0, shuffleOrder);
-  };
-
-  const fisherYatesShuffle = (array) => {
-    const arr = [...array];
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    return arr;
-  };
-
   const doShuffleAnimation = (step, currentOrder) => {
     if (step >= VISIBLE_SHUFFLE_STEPS) {
       let finalOrder = [...currentOrder];
       for (let i = 0; i < INTERNAL_SHUFFLE_STEPS; i++) {
-        finalOrder = fisherYatesShuffle(finalOrder);
+        finalOrder = [...currentOrder].sort(() => Math.random() - 0.5);
       }
       animateBoxesToOrder(finalOrder, () => {
         setShuffleOrder(finalOrder);
         setIsShuffling(false);
-        setReadyToShuffle(false);
       });
       return;
     }
-    const newOrder = [...currentOrder];
-    const i = Math.floor(Math.random() * newOrder.length);
-    let j = Math.floor(Math.random() * newOrder.length);
-    while (j === i) j = Math.floor(Math.random() * newOrder.length);
-    [newOrder[i], newOrder[j]] = [newOrder[j], newOrder[i]];
+    const newOrder = [...currentOrder].sort(() => Math.random() - 0.5);
     animateBoxesToOrder(newOrder, () => {
       setShuffleOrder(newOrder);
       setTimeout(() => doShuffleAnimation(step + 1, newOrder), SHUFFLE_STEP_DELAY);
     });
   };
 
-  const shuffleBoxes = (boxes) => {
-    return [...boxes].sort(() => Math.random() - 0.5);
-  };
-
+  // SECURE: The main game logic happens here, ON-CLICK.
   const handleBoxSelect = useCallback(
     async (boxId) => {
-      if (selectedBox !== null || purchasing || showInitialItems || isShuffling || isGettingReward) return;
+      if (selectedBox !== null || purchasing || isShuffling || isGettingReward) return;
 
       setPurchasing(true);
       setSelectedBox(boxId);
@@ -365,26 +260,40 @@ const CalendarCard = () => {
       fadeAnim.setValue(0);
 
       const amount = parsedAmount;
-      const selectedReward = boxes[shuffleOrder[boxId]].content;
-      const isCoinReward = selectedReward.type === 'coins' && selectedReward.value > 0;
+      // THE MAGIC MOMENT: Your true reward is generated right here!
+      const trueReward = generateSingleReward(amount, filteredAssets, chancesConfig);
+
+      const newOpenedBoxes = {};
+      newOpenedBoxes[boxId] = trueReward; // Place the true reward
+
+      const isCoinReward = trueReward.type === 'coins' && trueReward.value > 0;
 
       try {
+        // Process the true reward first
         if (isCoinReward) {
-          await addBalance(selectedReward.value);
+          await addBalance(trueReward.value);
         }
 
         await savePurchaseHistory(user.email, {
           gameType: 'LuckyBox',
           amount,
           boxId,
-          reward: selectedReward,
-          title: selectedReward.type === 'asset' ? selectedReward.value : 'coins',
+          reward: trueReward,
+          title: trueReward.type === 'asset' ? trueReward.value : 'coins',
           purchaseDate: new Date(),
           maxPossibleReward: maxReward,
           gamegiven: isCoinReward,
         });
 
-        setReward(selectedReward);
+        // For display only: generate dummy rewards for the other 8 boxes
+        for (let i = 0; i < NUM_BOXES; i++) {
+            if (i !== boxId) {
+                newOpenedBoxes[i] = generateSingleReward(amount, filteredAssets, chancesConfig);
+            }
+        }
+
+        setOpenedBoxes(newOpenedBoxes); // Reveal all boxes at once
+        setReward(trueReward);
         setRewardGiven(true);
         setShowReward(true);
       } catch (error) {
@@ -404,39 +313,26 @@ const CalendarCard = () => {
       }
     },
     [
-      selectedBox,
-      purchasing,
-      showInitialItems,
-      isShuffling,
-      isGettingReward,
-      parsedAmount,
-      boxes,
-      shuffleOrder,
-      addBalance,
-      savePurchaseHistory,
-      user,
-      maxReward,
-      fadeAnim,
+      selectedBox, purchasing, isShuffling, isGettingReward, parsedAmount,
+      filteredAssets, chancesConfig, openedBoxes, addBalance, savePurchaseHistory,
+      user, maxReward, fadeAnim,
     ]
   );
 
   const resetGame = () => {
     setInputAmount('');
-    setGameSessionAssets([]);
     setShowBoxSelection(false);
-    setBoxes([]);
     setSelectedBox(null);
     setShowReward(false);
     setReward(null);
     setMaxReward(0);
     setError(null);
-    setShowInitialItems(true);
     setIsShuffling(false);
     setIsStartingGame(false);
-    setReadyToShuffle(false);
     setShuffleOrder([...Array(NUM_BOXES).keys()]);
     setRewardGiven(false);
     setShowRewardText(false);
+    setOpenedBoxes({});
     fadeAnim.setValue(0);
   };
 
@@ -449,85 +345,58 @@ const CalendarCard = () => {
         marginBottom: 20,
       }}
     >
-      {shuffleOrder.map((boxIdx, gridIdx) =>
-        boxes[boxIdx] ? (
-          <Animated.View
-            key={boxIdx}
-            style={[
-              styles.box,
-              {
-                position: 'absolute',
-                ...anims[boxIdx].getLayout(),
-                zIndex: selectedBox === gridIdx ? 2 : 1,
-              },
-              selectedBox === gridIdx && styles.selectedBox,
-              showInitialItems || isShuffling || isGettingReward ? styles.disabledBox : null,
-            ]}
+      {shuffleOrder.map((boxIdx, gridIdx) => (
+        <Animated.View
+          key={boxIdx}
+          style={[
+            styles.box,
+            {
+              position: 'absolute',
+              ...anims[boxIdx].getLayout(),
+              zIndex: selectedBox === gridIdx ? 2 : 1,
+            },
+            selectedBox === gridIdx && styles.selectedBox,
+          ]}
+        >
+          <TouchableOpacity
+            style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
+            onPress={() => handleBoxSelect(gridIdx)}
+            disabled={isShuffling || selectedBox !== null || isGettingReward}
+            activeOpacity={0.8}
           >
-            <TouchableOpacity
-              style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
-              onPress={() => handleBoxSelect(gridIdx)}
-              disabled={showInitialItems || isShuffling || selectedBox !== null || isGettingReward}
-              activeOpacity={0.8}
-            >
-              {showInitialItems ? (
-                <View style={styles.boxContent}>
-                  {boxes[boxIdx].content.type === 'coins' ? (
-                    <>
-                      <Coins size={20} color="#3aed76" />
-                      <Text style={styles.rewardText}>{boxes[boxIdx].content.value}</Text>
-                    </>
-                  ) : (
-                    <>
-                      {boxes[boxIdx].content.imageUrl ? (
-                        <Image
-                          source={{ uri: boxes[boxIdx].content.imageUrl }}
-                          style={styles.assetImage}
-                          resizeMode="cover"
-                        />
-                      ) : (
-                        <Star size={20} color="#FFD700" />
-                      )}
-                      <Text style={styles.assetText} numberOfLines={2}>
-                        {boxes[boxIdx].content.value}
-                      </Text>
-                    </>
-                  )}
-                </View>
-              ) : selectedBox === gridIdx && rewardGiven ? (
-                <View style={styles.boxContent}>
-                  {boxes[boxIdx].content.type === 'coins' ? (
-                    <>
-                      <Coins size={20} color="#3aed76" />
-                      <Text style={styles.rewardText}>{boxes[boxIdx].content.value}</Text>
-                    </>
-                  ) : (
-                    <>
-                      {boxes[boxIdx].content.imageUrl ? (
-                        <Image
-                          source={{ uri: boxes[boxIdx].content.imageUrl }}
-                          style={styles.assetImage}
-                          resizeMode="cover"
-                        />
-                      ) : (
-                        <Star size={20} color="#FFD700" />
-                      )}
-                      <Text style={styles.assetText} numberOfLines={2}>
-                        {boxes[boxIdx].content.value}
-                      </Text>
-                    </>
-                  )}
-                </View>
-              ) : (
-                <Gift size={28} color={selectedBox === gridIdx ? '#3aed76' : '#6B7280'} />
-              )}
-            </TouchableOpacity>
-          </Animated.View>
-        ) : null
-      )}
+            {openedBoxes[gridIdx] ? ( // If the box is opened, show its content
+              <View style={styles.boxContent}>
+                {openedBoxes[gridIdx].type === 'coins' ? (
+                  <>
+                    <Coins size={20} color={colors.accent} />
+                    <Text style={styles.rewardText}>{openedBoxes[gridIdx].value}</Text>
+                  </>
+                ) : (
+                  <>
+                    {openedBoxes[gridIdx].imageUrl ? (
+                      <Image
+                        source={{ uri: openedBoxes[gridIdx].imageUrl }}
+                        style={styles.assetImage}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <Star size={20} color="#FFD700" />
+                    )}
+                    <Text style={styles.assetText} numberOfLines={2}>
+                      {openedBoxes[gridIdx].value}
+                    </Text>
+                  </>
+                )}
+              </View>
+            ) : ( // Otherwise, show the gift icon
+              <Gift size={28} color={selectedBox === gridIdx ? colors.accent : colors.mutedText} />
+            )}
+          </TouchableOpacity>
+        </Animated.View>
+      ))}
       {isGettingReward && (
         <View style={styles.gettingRewardOverlay}>
-          <ActivityIndicator size="large" color="#3aed76" />
+          <ActivityIndicator size="large" color={colors.accent} />
           <Text style={styles.gettingRewardText}>Getting your reward...</Text>
         </View>
       )}
@@ -544,7 +413,7 @@ const CalendarCard = () => {
   if (loadingConfig) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color="#3aed76" />
+        <ActivityIndicator size="large" color={colors.accent} />
       </View>
     );
   }
@@ -553,7 +422,7 @@ const CalendarCard = () => {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Gift size={24} color="#3aed76" />
+        <Gift size={24} color={colors.accent} />
         <Text style={styles.title}>Lucky Box Game</Text>
       </View>
       {/* Current Balance Display */}
@@ -573,7 +442,6 @@ const CalendarCard = () => {
             style={styles.amountInput}
             value={inputAmount}
             onChangeText={(text) => {
-              // Only digits allowed, capped at 7000
               let val = text.replace(/[^0-9]/g, '');
               if (val) {
                 let numVal = parseInt(val);
@@ -584,7 +452,7 @@ const CalendarCard = () => {
               setError(null);
             }}
             placeholder="Enter coins (min 50, max 7000)"
-            placeholderTextColor="#6B7280"
+            placeholderTextColor={colors.mutedText}
             keyboardType="numeric"
           />
           <Image source={require('../../../assets/rupee.png')} style={styles.coinIcon} />
@@ -595,12 +463,9 @@ const CalendarCard = () => {
             <Text style={styles.previewText}>
               Max Possible Reward: {(parsedAmount * (chancesConfig.maxRewardMultiplier ?? 5)).toLocaleString()} Coins
             </Text>
-            <Text style={styles.previewText}>
-              Coin Range: 0 - {(parsedAmount * (chancesConfig.maxRewardMultiplier ?? 5)).toLocaleString()} Coins
-            </Text>
             {filteredAssets.length > 0 && (
               <Text style={styles.previewText}>
-                + Chance for {filteredAssets.length} game assets (within {chancesConfig.assetMaxPriceMultiplier ?? 3}x your amount)
+                + Chance for valuable game assets!
               </Text>
             )}
           </View>
@@ -617,7 +482,7 @@ const CalendarCard = () => {
             <Text style={styles.startButtonText}>Starting Game...</Text>
           ) : (
             <>
-              <Play size={20} color="#0a0a0a" />
+              <Play size={20} color={colors.background} />
               <Text style={styles.startButtonText}>Start Game</Text>
             </>
           )}
@@ -626,13 +491,9 @@ const CalendarCard = () => {
       {/* Probability Info */}
       <View style={styles.probabilityContainer}>
         <Text style={styles.probabilityTitle}>
-          Win Chance: <Text style={{ color: '#3aed76' }}>High!</Text>
+          Win Chance: <Text style={{ color: colors.accent }}>High!</Text>
         </Text>
         <Text style={styles.probabilityText}>Most players win 2x or more! Try your luck 🎉</Text>
-        <Text style={styles.probabilityText}>
-          • 0-{chancesConfig.maxRewardMultiplier ?? 5}x coins, {chancesConfig.assetCountRange?.[0] ?? 4}-
-          {chancesConfig.assetCountRange?.[1] ?? 7} assets per game
-        </Text>
       </View>
       {/* Available Assets Preview */}
       {gameAssets.length > 0 && (
@@ -664,48 +525,34 @@ const CalendarCard = () => {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Choose Your Lucky Box ({parsedAmount} Coins)</Text>
               <TouchableOpacity onPress={resetGame} style={styles.closeButton}>
-                <X size={24} color="#6B7280" />
+                <X size={24} color={colors.mutedText} />
               </TouchableOpacity>
             </View>
             <Text style={styles.modalSubtitle}>
-              Coin Range: 0 - {maxReward.toLocaleString()} Coins | {gameSessionAssets.length} Assets Available
+              Max Reward: {maxReward.toLocaleString()} Coins
             </Text>
-            {/* Ready Button */}
-            {showInitialItems && !readyToShuffle && !isShuffling && (
-              <TouchableOpacity style={styles.readyButton} onPress={handleReadyClick}>
-                <Shuffle size={20} color="#0a0a0a" />
-                <Text style={styles.readyButtonText}>Ready to Shuffle</Text>
-              </TouchableOpacity>
-            )}
-            {/* Shuffling Button */}
+
             {isShuffling && (
               <>
                 <View style={styles.shufflingButton}>
-                  <ActivityIndicator size="small" color="#3aed76" />
+                  <ActivityIndicator size="small" color={colors.accent} />
                   <Text style={styles.shufflingButtonText}>Shuffling...</Text>
                 </View>
-                {/* Audio only playback during shuffle */}
                 <Video
-                  source={{
-                    uri: 'https://ik.imagekit.io/ypvwcoywn3/Moving%20around%20or%20shuffling%20sound%20effect%20%20%20(for%20animations).mp4?updatedAt=1749056364389',
-                  }}
+                  source={{ uri: 'https://ik.imagekit.io/ypvwcoywn3/Moving%20around%20or%20shuffling%20sound%20effect%20%20%20(for%20animations).mp4?updatedAt=1749056364389' }}
                   audioOnly={true}
                   paused={!isShuffling}
                   repeat={true}
-                  volume={1000.0}
-                  playInBackground={false}
-                  playWhenInactive={false}
-                  ignoreSilentSwitch="ignore"
+                  volume={1.0}
                   style={{ height: 0, width: 0 }}
                 />
               </>
             )}
+
             {renderBoxGrid()}
-            {!showInitialItems && selectedBox === null && !isShuffling && !isGettingReward && (
+
+            {selectedBox === null && !isShuffling && !isGettingReward && (
               <Text style={styles.instructionText}>Select a box to reveal your reward!</Text>
-            )}
-            {showInitialItems && !readyToShuffle && !isShuffling && (
-              <Text style={styles.instructionText}>Study the items carefully, then click "Ready to Shuffle"!</Text>
             )}
           </View>
         </View>
@@ -723,7 +570,7 @@ const CalendarCard = () => {
                 <View style={styles.rewardDisplay}>
                   {reward?.type === 'coins' ? (
                     <>
-                      <Coins size={48} color={reward.value === 0 ? '#6B7280' : '#3aed76'} />
+                      <Coins size={48} color={reward.value === 0 ? colors.mutedText : colors.accent} />
                       <Text style={[styles.rewardValue, reward.value === 0 && styles.zeroReward]}>
                         {reward.value.toLocaleString()} Coins
                       </Text>
@@ -762,34 +609,9 @@ const CalendarCard = () => {
 };
 
 const styles = StyleSheet.create({
-  // ... your existing styles unchanged ...
-  rewardIsThisText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#3aed76',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  gettingRewardOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
-  },
-  gettingRewardText: {
-    marginTop: 12,
-    color: '#3aed76',
-    fontSize: 16,
-    fontWeight: '600',
-  },
   container: {
     padding: 16,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: colors.background,
     flex: 1,
   },
   header: {
@@ -800,7 +622,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#3aed76',
+    color: colors.accent,
     marginLeft: 8,
   },
   balanceContainer: {
@@ -814,7 +636,7 @@ const styles = StyleSheet.create({
   },
   balanceLabel: {
     fontSize: 14,
-    color: '#9CA3AF',
+    color: colors.mutedText,
   },
   balanceDisplay: {
     flexDirection: 'row',
@@ -824,7 +646,7 @@ const styles = StyleSheet.create({
   balanceAmount: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#3aed76',
+    color: colors.accent,
   },
   inputSection: {
     marginBottom: 20,
@@ -832,20 +654,20 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#3aed76',
+    color: colors.accent,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 14,
-    color: '#9CA3AF',
+    color: colors.mutedText,
     marginBottom: 16,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(58, 237, 118, 0.1)',
+    backgroundColor: colors.backgroundLight,
     borderWidth: 1,
-    borderColor: '#3aed76',
+    borderColor: colors.accent,
     borderRadius: 12,
     paddingHorizontal: 16,
     marginBottom: 12,
@@ -853,7 +675,7 @@ const styles = StyleSheet.create({
   amountInput: {
     flex: 1,
     fontSize: 16,
-    color: '#3aed76',
+    color: colors.accent,
     paddingVertical: 12,
   },
   coinIcon: {
@@ -862,7 +684,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 12,
-    color: '#DC2626',
+    color: colors.error,
     marginBottom: 12,
   },
   rewardPreview: {
@@ -873,11 +695,11 @@ const styles = StyleSheet.create({
   },
   previewText: {
     fontSize: 14,
-    color: '#3aed76',
+    color: colors.accent,
     marginBottom: 4,
   },
   startButton: {
-    backgroundColor: '#3aed76',
+    backgroundColor: colors.accent,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -886,12 +708,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   startButtonDisabled: {
-    backgroundColor: '#6B7280',
+    backgroundColor: colors.mutedText,
   },
   startButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0a0a0a',
+    color: colors.background,
   },
   probabilityContainer: {
     backgroundColor: 'rgba(58, 237, 118, 0.05)',
@@ -902,12 +724,12 @@ const styles = StyleSheet.create({
   probabilityTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#3aed76',
+    color: colors.accent,
     marginBottom: 8,
   },
   probabilityText: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: colors.mutedText,
     marginBottom: 2,
   },
   assetsPreview: {
@@ -919,9 +741,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   assetPreviewCard: {
-    backgroundColor: 'rgba(58, 237, 118, 0.1)',
+    backgroundColor: colors.backgroundLight,
     borderWidth: 1,
-    borderColor: '#3aed76',
+    borderColor: colors.accent,
     borderRadius: 8,
     padding: 8,
     width: 80,
@@ -935,28 +757,13 @@ const styles = StyleSheet.create({
   },
   assetPreviewTitle: {
     fontSize: 10,
-    color: '#3aed76',
+    color: colors.accent,
     textAlign: 'center',
     marginBottom: 2,
   },
   assetPreviewPrice: {
     fontSize: 9,
-    color: '#9CA3AF',
-  },
-  noAssetsCard: {
-    backgroundColor: 'rgba(58, 237, 118, 0.1)',
-    borderWidth: 1,
-    borderColor: '#3aed76',
-    borderRadius: 8,
-    padding: 12,
-    width: 200,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  noAssetsText: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    textAlign: 'center',
+    color: colors.mutedText,
   },
   modalOverlay: {
     flex: 1,
@@ -966,7 +773,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   modalContent: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: colors.backgroundLight,
     borderRadius: 20,
     width: '95%',
     maxWidth: 400,
@@ -982,19 +789,19 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#3aed76',
+    color: colors.accent,
     flex: 1,
   },
   modalSubtitle: {
     fontSize: 14,
-    color: '#9CA3AF',
+    color: colors.mutedText,
     marginBottom: 20,
   },
   closeButton: {
     padding: 4,
   },
   readyButton: {
-    backgroundColor: '#3aed76',
+    backgroundColor: colors.accent,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1006,7 +813,7 @@ const styles = StyleSheet.create({
   readyButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0a0a0a',
+    color: colors.background,
   },
   shufflingButton: {
     backgroundColor: 'rgba(58, 237, 118, 0.2)',
@@ -1021,28 +828,21 @@ const styles = StyleSheet.create({
   shufflingButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#3aed76',
-  },
-  boxGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    justifyContent: 'center',
-    marginBottom: 20,
+    color: colors.accent,
   },
   box: {
     width: BOX_SIZE,
     height: BOX_SIZE,
-    backgroundColor: 'rgba(58, 237, 118, 0.1)',
+    backgroundColor: colors.backgroundLight,
     borderWidth: 2,
-    borderColor: '#3aed76',
+    borderColor: colors.accent,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
   selectedBox: {
     backgroundColor: 'rgba(58, 237, 118, 0.2)',
-    borderColor: '#3aed76',
+    borderColor: colors.accent,
   },
   disabledBox: {
     opacity: 0.7,
@@ -1055,7 +855,7 @@ const styles = StyleSheet.create({
   rewardText: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#3aed76',
+    color: colors.accent,
     marginTop: 4,
   },
   assetText: {
@@ -1073,11 +873,11 @@ const styles = StyleSheet.create({
   },
   instructionText: {
     fontSize: 14,
-    color: '#9CA3AF',
+    color: colors.mutedText,
     textAlign: 'center',
   },
   rewardModal: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: colors.backgroundLight,
     borderRadius: 20,
     padding: 30,
     alignItems: 'center',
@@ -1087,8 +887,15 @@ const styles = StyleSheet.create({
   congratsText: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#3aed76',
+    color: colors.accent,
     marginBottom: 10,
+    textAlign: 'center',
+  },
+  rewardIsThisText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.accent,
+    marginBottom: 20,
     textAlign: 'center',
   },
   rewardDisplay: {
@@ -1098,22 +905,22 @@ const styles = StyleSheet.create({
   rewardValue: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#3aed76',
+    color: colors.accent,
     marginTop: 12,
     textAlign: 'center',
   },
   zeroReward: {
-    color: '#6B7280',
+    color: colors.mutedText,
   },
   rewardMultiplier: {
     fontSize: 14,
-    color: '#9CA3AF',
+    color: colors.mutedText,
     marginTop: 4,
     textAlign: 'center',
   },
   rewardDescription: {
     fontSize: 12,
-    color: '#6B7280',
+    color: colors.mutedText,
     marginTop: 8,
     textAlign: 'center',
   },
@@ -1123,7 +930,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   playAgainButton: {
-    backgroundColor: '#3aed76',
+    backgroundColor: colors.accent,
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 12,
@@ -1131,7 +938,24 @@ const styles = StyleSheet.create({
   playAgainText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0a0a0a',
+    color: colors.background,
+  },
+  gettingRewardOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  gettingRewardText: {
+    marginTop: 12,
+    color: colors.accent,
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

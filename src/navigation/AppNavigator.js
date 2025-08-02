@@ -6,6 +6,7 @@ import PaymentSuccessScreen from '../screens/PaymentSuccessScreen';
 import CoinBundleScreen from '../screens/CoinBundleScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 // import CheckoutScreen from '../screens/CheckoutScreen';
+import { colors } from '../screens/theme'; // Import theme colors
 
 const Stack = createStackNavigator();
 
@@ -14,7 +15,7 @@ const AppNavigator = () => {
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-        cardStyle: { backgroundColor: 'rgba(17, 24, 39, 0.95)' }
+        cardStyle: { backgroundColor: colors.background }, // Use theme background color
       }}
     >
       <Stack.Screen name="Main" component={MainScreen} />

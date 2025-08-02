@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect, useMemo, useCallback } from 'react';
+import DailyRewardModal from '../components/common/DailyRewardModal'; // <-- YEH LINE ADD KAREIN
 import {
   TouchableOpacity,
   Linking,
@@ -327,12 +328,14 @@ const MainScreen = () => {
       <TouchableOpacity
         style={styles.fab}
         activeOpacity={0.8}
-        onPress={() => Linking.openURL('https://t.me/xgamingclub')}
+        onPress={() => Linking.openURL('https://discord.gg/a3KmcgCqDP')}
       >
         <LinearGradient colors={colors.activeGradient} style={styles.fabGradient}>
           <Text style={styles.fabText}>SUPPORT</Text>
         </LinearGradient>
       </TouchableOpacity>
+      <DailyRewardModal />
+
     </SafeAreaView>
   );
 };

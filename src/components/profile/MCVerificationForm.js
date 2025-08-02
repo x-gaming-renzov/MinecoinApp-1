@@ -18,6 +18,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useUser } from "../../context/UserContext";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../config/firebase";
+import { colors } from "../../screens/theme"; // Import colors from theme file
 
 const DISCORD_URL = "https://discord.gg/a3KmcgCqDP";
 
@@ -26,7 +27,7 @@ const SuccessModal = ({ visible, onClose, isUpdating = false }) => (
     <View style={styles.modalOverlay}>
       <View style={styles.modalContent}>
         <View style={styles.successIcon}>
-          <Check size={28} color="#FFFFFF" />
+          <Check size={28} color={colors.background} />
         </View>
         <Text style={styles.modalTitle}>
           {isUpdating ? "Update Successful!" : "Verification Successful!"}
@@ -46,7 +47,7 @@ const SuccessModal = ({ visible, onClose, isUpdating = false }) => (
 
 const ValidationMessage = ({ message, type }) => (
   <View style={styles.validationContainer}>
-    <AlertCircle size={16} color={type === "error" ? "#EF4444" : "#10B981"} />
+    <AlertCircle size={16} color={type === "error" ? colors.error : colors.success} />
     <Text
       style={[
         styles.validationText,
@@ -231,7 +232,7 @@ const MCVerificationForm = () => {
   if (isLoading) {
     return (
       <View style={[styles.container, styles.loadingContainer]}>
-        <ActivityIndicator size="large" color="#3aed76" />
+        <ActivityIndicator size="large" color={colors.accent} />
       </View>
     );
   }
@@ -241,7 +242,7 @@ const MCVerificationForm = () => {
       <View style={styles.container}>
         <View style={styles.verifiedCard}>
           <View style={styles.verifiedIcon}>
-            <Check size={28} color="#FFFFFF" />
+            <Check size={28} color={colors.background} />
           </View>
           <Text style={styles.verifiedTitle}>Account Verified</Text>
           <Text style={styles.verifiedUsername}>
@@ -315,11 +316,11 @@ const MCVerificationForm = () => {
             ]}
           >
             <View style={styles.inputContent}>
-              <User size={20} color="#3aed76" />
+              <User size={20} color={colors.accent} />
               <TextInput
                 style={styles.input}
                 placeholder="Enter your Minecraft gamertag"
-                placeholderTextColor="#6B7280"
+                placeholderTextColor={colors.mutedText}
                 value={formState.credentials.username}
                 onChangeText={(text) =>
                   setFormState((prev) => ({
@@ -335,7 +336,7 @@ const MCVerificationForm = () => {
                 autoCapitalize="none"
               />
               {!editableUsername && (
-                <Lock size={20} color="#9CA3AF" style={styles.lockIcon} />
+                <Lock size={20} color={colors.mutedText} style={styles.lockIcon} />
               )}
             </View>
           </View>
@@ -354,11 +355,11 @@ const MCVerificationForm = () => {
             ]}
           >
             <View style={styles.inputContent}>
-              <Lock size={20} color="#3aed76" />
+              <Lock size={20} color={colors.accent} />
               <TextInput
                 style={styles.input}
                 placeholder="Password used with /register"
-                placeholderTextColor="#6B7280"
+                placeholderTextColor={colors.mutedText}
                 secureTextEntry={formState.uiState.secureTextEntry}
                 value={formState.credentials.password}
                 onChangeText={(text) =>
@@ -430,7 +431,7 @@ const MCVerificationForm = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0a0a0a",
+    backgroundColor: "transparent",
   },
   formContent: {
     padding: 24,
@@ -438,12 +439,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: "700",
-    color: "#3aed76",
+    color: colors.accent,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 17,
-    color: "#A1A1AA",
+    color: colors.mutedText,
     marginBottom: 32,
   },
   formGroup: {
@@ -451,10 +452,10 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   inputWrapper: {
-    backgroundColor: "#121212",
+    backgroundColor: colors.backgroundLight,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#3aed76",
+    borderColor: colors.accent,
     overflow: "hidden",
   },
   inputContent: {
@@ -466,19 +467,19 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
-    color: "#3aed76",
+    color: colors.accent,
     padding: 0,
   },
   showButton: {
     paddingHorizontal: 8,
   },
   showButtonText: {
-    color: "#3aed76",
+    color: colors.accent,
     fontSize: 15,
     fontWeight: "600",
   },
   submitButton: {
-    backgroundColor: "#3aed76",
+    backgroundColor: colors.accent,
     borderRadius: 12,
     padding: 16,
     alignItems: "center",
@@ -487,22 +488,22 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   submitButtonText: {
-    color: "#0a0a0a",
+    color: colors.background,
     fontSize: 17,
     fontWeight: "700",
   },
   inputError: {
-    borderColor: "#EF4444",
+    borderColor: colors.error,
   },
   verifiedCard: {
     margin: 24,
     padding: 32,
     borderRadius: 20,
     alignItems: "center",
-    backgroundColor: "#121212",
+    backgroundColor: colors.backgroundLight,
     borderWidth: 1,
-    borderColor: "#3aed76",
-    shadowColor: "#3aed76",
+    borderColor: colors.accent,
+    shadowColor: colors.accent,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.2,
     shadowRadius: 14,
@@ -512,7 +513,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: "#3aed76",
+    backgroundColor: colors.accent,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 24,
@@ -520,42 +521,46 @@ const styles = StyleSheet.create({
   verifiedTitle: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#3aed76",
+    color: colors.accent,
     marginBottom: 8,
   },
   verifiedUsername: {
     fontSize: 18,
-    color: "#A1A1AA",
+    color: colors.mutedText,
     marginBottom: 16,
   },
   verifiedDescription: {
     fontSize: 16,
-    color: "#A1A1AA",
+    color: colors.mutedText,
     textAlign: "center",
     marginBottom: 32,
     lineHeight: 24,
   },
   discordButton: {
-    backgroundColor: "#3aed76",
+    backgroundColor: colors.accent,
     borderRadius: 12,
-    padding: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
     alignItems: "center",
     marginBottom: 16,
+    width: "100%",
   },
   discordButtonText: {
-    color: "#0a0a0a",
+    color: colors.background,
     fontSize: 17,
     fontWeight: "700",
   },
   editButton: {
     borderWidth: 1,
-    borderColor: "#3aed76",
+    borderColor: colors.accent,
     borderRadius: 12,
-    padding: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
     alignItems: "center",
+    width: "100%",
   },
   editButtonText: {
-    color: "#3aed76",
+    color: colors.accent,
     fontSize: 17,
     fontWeight: "700",
   },
@@ -567,7 +572,7 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   modalContent: {
-    backgroundColor: "#121212",
+    backgroundColor: colors.backgroundLight,
     borderRadius: 20,
     padding: 24,
     width: "100%",
@@ -578,7 +583,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: "#3aed76",
+    backgroundColor: colors.accent,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 24,
@@ -586,25 +591,26 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 22,
     fontWeight: "700",
-    color: "#3aed76",
+    color: colors.accent,
     marginBottom: 8,
     textAlign: "center",
   },
   modalDescription: {
     fontSize: 16,
-    color: "#A1A1AA",
+    color: colors.mutedText,
     textAlign: "center",
     marginBottom: 24,
     lineHeight: 24,
   },
   modalButton: {
-    backgroundColor: "#3aed76",
+    backgroundColor: colors.accent,
     borderRadius: 12,
     padding: 16,
     alignItems: "center",
+    width: "100%",
   },
   modalButtonText: {
-    color: "#0a0a0a",
+    color: colors.background,
     fontSize: 17,
     fontWeight: "700",
   },
@@ -616,22 +622,22 @@ const styles = StyleSheet.create({
   },
   validationText: {
     fontSize: 14,
-    color: "#A1A1AA",
+    color: colors.mutedText,
   },
   errorText: {
-    color: "#EF4444",
+    color: colors.error,
   },
   successText: {
-    color: "#10B981",
+    color: colors.success,
   },
   rewardsContainer: {
-    backgroundColor: "#121212",
+    backgroundColor: "transparent",
     borderRadius: 12,
     padding: 16,
     marginBottom: 24,
     width: "100%",
     borderWidth: 1,
-    borderColor: "#3aed76",
+    borderColor: colors.accent,
   },
   rewardsHeader: {
     marginBottom: 8,
@@ -640,7 +646,7 @@ const styles = StyleSheet.create({
   rewardsTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#3aed76",
+    color: colors.accent,
     textAlign: "center",
   },
   rewardsInfo: {
@@ -648,13 +654,13 @@ const styles = StyleSheet.create({
   },
   rewardsBenefit: {
     fontSize: 16,
-    color: "#3aed76",
+    color: colors.accent,
     fontWeight: "600",
     marginBottom: 4,
   },
   rewardsDescription: {
     fontSize: 15,
-    color: "#A1A1AA",
+    color: colors.mutedText,
     textAlign: "center",
     lineHeight: 22,
   },

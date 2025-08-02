@@ -22,6 +22,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+import { colors } from './theme'; // Import theme colors
 
 const PLACEMENT_ID = '2233';
 
@@ -207,7 +208,7 @@ const CoinBundleScreen = () => {
       />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <ArrowLeft size={24} color="#3aed76" />
+          <ArrowLeft size={24} color={colors.accent} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Get Coins</Text>
       </View>
@@ -221,7 +222,7 @@ const CoinBundleScreen = () => {
           <Text style={styles.subtitle}>Select a coin bundle to purchase</Text>
 
           {loading ? (
-            <ActivityIndicator size="large" color="#3aed76" style={styles.loader} />
+            <ActivityIndicator size="large" color={colors.accent} style={styles.loader} />
           ) : (
             <TouchableOpacity
               style={[styles.bundleButton, isButtonDisabled && styles.disabledButton]}
@@ -230,7 +231,7 @@ const CoinBundleScreen = () => {
               activeOpacity={0.8}
             >
               {isUpdating ? (
-                <ActivityIndicator size="small" color="#fff" />
+                <ActivityIndicator size="small" color={colors.background} />
               ) : (
                 <Text style={styles.bundleButtonText}>
                   {transactionCompleted ? 'Purchase Complete' : 'View Coin Bundles'}
@@ -255,7 +256,7 @@ const CoinBundleScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -263,7 +264,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#3aed76',
+    borderBottomColor: colors.accent,
   },
   backButton: {
     marginRight: 16,
@@ -271,7 +272,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#3aed76',
+    color: colors.accent,
   },
   scrollView: {
     flex: 1,
@@ -282,30 +283,32 @@ const styles = StyleSheet.create({
   },
   cardContainer: {
     borderRadius: 20,
-    backgroundColor: '#121212',
-    shadowColor: '#3aed76',
+    backgroundColor: colors.backgroundLight,
+    shadowColor: colors.accent,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.25,
     shadowRadius: 16,
     elevation: 8,
     overflow: 'hidden',
     padding: 24,
+    borderWidth: 1,
+    borderColor: colors.accent,
   },
   subtitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#3aed76',
+    color: colors.accent,
     marginBottom: 28,
     textAlign: 'center',
   },
   bundleButton: {
-    backgroundColor: '#3aed76',
+    backgroundColor: colors.accent,
     paddingVertical: 18,
     paddingHorizontal: 36,
     borderRadius: 14,
     marginBottom: 36,
     alignItems: 'center',
-    shadowColor: '#3aed76',
+    shadowColor: colors.accent,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.4,
     shadowRadius: 12,
@@ -317,29 +320,31 @@ const styles = StyleSheet.create({
   bundleButtonText: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#0a0a0a',
+    color: colors.background,
   },
   loader: {
     marginVertical: 24,
   },
   infoContainer: {
-    backgroundColor: '#121212',
+    backgroundColor: colors.backgroundLight,
     padding: 24,
     borderRadius: 14,
-    shadowColor: '#3aed76',
+    shadowColor: colors.accent,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.25,
     shadowRadius: 16,
     elevation: 8,
+    borderWidth: 1,
+    borderColor: colors.accent,
   },
   infoText: {
     fontSize: 15,
-    color: '#A1A1AA',
+    color: colors.mutedText,
     marginBottom: 16,
     lineHeight: 22,
   },
   errorText: {
-    color: '#EF4444',
+    color: colors.error,
     fontSize: 15,
     marginTop: 24,
     textAlign: 'center',
@@ -349,12 +354,12 @@ const styles = StyleSheet.create({
     top: 60,
     left: '5%',
     right: '5%',
-    backgroundColor: '#3aed76',
+    backgroundColor: colors.accent,
     borderRadius: 14,
     paddingVertical: 16,
     paddingHorizontal: 24,
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: colors.accent,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
@@ -362,7 +367,7 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   toastText: {
-    color: '#0a0a0a',
+    color: colors.background,
     fontSize: 16,
     fontWeight: '700',
     textAlign: 'center',

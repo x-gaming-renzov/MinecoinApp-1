@@ -10,15 +10,40 @@ const MaintenanceCheck = ({ children }) => {
   const [message, setMessage] = React.useState('');
   const [loading, setLoading] = React.useState(true);
 
+  const CURRENT_APP_VERSION = '1.0.0'; // Your app's actual version
+
   React.useEffect(() => {
     try {
       const maintenanceRef = doc(db, 'appConfig', 'maintenance');
+
       const unsubscribe = onSnapshot(maintenanceRef, (doc) => {
         if (doc.exists()) {
           const data = doc.data();
-          setIsInMaintenance(false);  // Changed this line
-          setMessage(data.message || 'App is under maintenance. Please try again later.');
+          const {
+            isMaintenanceMode,
+            message,
+            appVersion,
+            currentAppVersion
+          } = data;
+          setIsInMaintenance(false);
+//
+//          // Global maintenance mode
+//          if (isMaintenanceMode) {
+//            setIsInMaintenance(true);
+//            setMessage(message || 'App is under maintenance. Please try again later.');
+//          }
+//          // Version mismatch maintenance mode
+//          else if (appVersion !== CURRENT_APP_VERSION ) {
+//            setIsInMaintenance(true);
+//            setMessage('A new version is available or under maintenance.');
+//          }
+//          else {
+//            setIsInMaintenance(false);
+//          }
+        } else {
+          setIsInMaintenance(false);
         }
+
         setLoading(false);
       }, (error) => {
         console.error('Maintenance check error:', error);
@@ -31,6 +56,7 @@ const MaintenanceCheck = ({ children }) => {
       setLoading(false);
     }
   }, []);
+
 
   if (loading) {
     return (
@@ -47,7 +73,7 @@ const MaintenanceCheck = ({ children }) => {
     return (
       <View style={styles.videoContainer}>
         <Video
-                  source={require('../../../assets/maintaince.mp4')}
+                  source={{uri: 'https://ik.imagekit.io/ypvwcoywn3/maintaince.mp4'}}
                   repeat
                   resizeMode="cover"
                   style={StyleSheet.absoluteFill}

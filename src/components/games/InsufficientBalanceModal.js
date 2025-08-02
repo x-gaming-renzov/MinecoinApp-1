@@ -1,7 +1,15 @@
-// InsufficientBalanceModal.js
-import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, ActivityIndicator, Animated } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Modal,
+  ActivityIndicator,
+  Animated,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { colors } from '../../screens/theme'; // Import theme colors
 
 const InsufficientBalance = ({ visible, onClose }) => {
   const navigation = useNavigation();
@@ -28,12 +36,12 @@ const InsufficientBalance = ({ visible, onClose }) => {
       scaleAnim.setValue(0.9);
       opacityAnim.setValue(0);
     }
-  }, [visible]);
+  }, [visible, scaleAnim, opacityAnim]);
 
   const handleGetCoins = async () => {
     setLoading(true);
     try {
-      onClose();
+      onClose(); // Close the modal first
       navigation.navigate('CoinBundle');
     } finally {
       setLoading(false);
@@ -48,20 +56,20 @@ const InsufficientBalance = ({ visible, onClose }) => {
       onRequestClose={onClose}
     >
       <Animated.View style={[styles.overlay, { opacity: opacityAnim }]}>
-        <Animated.View 
+        <Animated.View
           style={[
             styles.modalContainer,
-            { transform: [{ scale: scaleAnim }] }
+            { transform: [{ scale: scaleAnim }] },
           ]}
         >
           <View style={styles.iconContainer}>
             <Text style={styles.icon}>💰</Text>
           </View>
-          
+
           <Text style={styles.title}>Insufficient Balance</Text>
-          
+
           <Text style={styles.message}>
-            You don't have enough coins to purchase this item.
+            You don't have enough coins to complete this action.
           </Text>
 
           <TouchableOpacity
@@ -71,7 +79,7 @@ const InsufficientBalance = ({ visible, onClose }) => {
             activeOpacity={0.8}
           >
             {loading ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
+              <ActivityIndicator size="small" color={colors.background} />
             ) : (
               <Text style={styles.getCoinsText}>Get More Coins</Text>
             )}
@@ -94,28 +102,30 @@ const InsufficientBalance = ({ visible, onClose }) => {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.backgroundLight,
     borderRadius: 24,
     padding: 24,
     width: '85%',
     maxWidth: 340,
     alignItems: 'center',
-    shadowColor: '#3aed76',
+    shadowColor: colors.accent,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.25,
     shadowRadius: 24,
     elevation: 24,
+    borderWidth: 1,
+    borderColor: colors.accent,
   },
   iconContainer: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.background,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -126,25 +136,25 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#3aed76',
+    color: colors.accent,
     marginBottom: 8,
   },
   message: {
     fontSize: 16,
-    color: '#6B7280',
+    color: colors.mutedText,
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 24,
   },
   getCoinsButton: {
-    backgroundColor: '#3aed76',
+    backgroundColor: colors.accent,
     paddingVertical: 14,
     paddingHorizontal: 24,
     borderRadius: 16,
     width: '100%',
     alignItems: 'center',
     marginBottom: 12,
-    shadowColor: '#3aed76',
+    shadowColor: colors.accent,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
@@ -154,7 +164,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   getCoinsText: {
-    color: '#FFFFFF',
+    color: colors.background,
     fontSize: 18,
     fontWeight: '600',
   },
@@ -162,12 +172,14 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 16,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: colors.mutedText,
     width: '100%',
     alignItems: 'center',
   },
   cancelText: {
-    color: '#4B5563',
+    color: colors.mutedText,
     fontSize: 16,
     fontWeight: '600',
   },

@@ -1,5 +1,5 @@
-// NotificationBanner.js - Shows notifications at the top of the screen
-import React, { useEffect, useState, useCallback } from 'react';
+// NotificationBanner.js - Shows temporary or permanent notifications from Firebase
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 // Import Firebase database connection and needed functions
 import { db } from '../../config/firebase';
@@ -10,60 +10,69 @@ import {
   orderBy,
   limit
 } from 'firebase/firestore';
+import { colors } from '../../screens/theme';
 
 const NotificationBanner = () => {
-  // Store the notification message
   const [notification, setNotification] = useState(null);
-  // Create animation value for fade effect (0 = invisible, 1 = visible)
   const [opacity] = useState(new Animated.Value(0));
+  const timeoutRef = useRef(null);
 
-  // Function to fade in the notification
   const fadeIn = useCallback(() => {
     Animated.timing(opacity, {
-      toValue: 1,         // Fade to fully visible
-      duration: 300,      // Take 300 milliseconds
-      useNativeDriver: true,  // Use native animation
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
     }).start();
   }, [opacity]);
 
-  // Function to fade out the notification
   const fadeOut = useCallback(() => {
     Animated.timing(opacity, {
-      toValue: 0,         // Fade to invisible
-      duration: 300,      // Take 300 milliseconds
+      toValue: 0,
+      duration: 300,
       useNativeDriver: true,
-    }).start(() => setNotification(null));  // Clear message after fade
+    }).start(() => setNotification(null));
   }, [opacity]);
 
-  // Set up connection to Firebase when component starts
   useEffect(() => {
     try {
-      // Connect to the bannerNotifications collection in Firebase
       const notificationsRef = collection(db, 'bannerNotifications');
-      
-      // Create a query to get the newest notification
       const q = query(
         notificationsRef,
-        orderBy('timestamp', 'desc'),  // Sort by newest first
-        limit(1)                       // Get only 1 notification
+        orderBy('timestamp', 'desc'),
+        limit(1)
       );
 
-      // Listen for real-time updates to notifications
       const unsubscribe = onSnapshot(q, (snapshot) => {
+        // Always clear the previous timer when a new update arrives
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+        }
+
         if (!snapshot.empty) {
-          // Get the notification data
           const notificationData = snapshot.docs[0].data();
-          
-          // If notification is marked as active, show it
+
           if (notificationData.isActive) {
             setNotification(notificationData.text);
             fadeIn();
+
+            // Check for a duration field from Firebase
+            const duration = notificationData.duration; // e.g., 5000 for 5 seconds
+
+            // If duration is a valid number and greater than 0, set a timer
+            if (typeof duration === 'number' && duration > 0) {
+              console.log(`Notification will hide in ${duration}ms.`);
+              timeoutRef.current = setTimeout(() => {
+                fadeOut();
+              }, duration);
+            } else {
+              // If duration is not set or is 0, it's unlimited
+              console.log('Notification has unlimited duration. Will hide when isActive is false.');
+            }
           } else {
-            // If not active, hide it
+            // If the notification is not active, fade it out
             fadeOut();
           }
         } else {
-          // If no notifications exist, ensure banner is hidden
           fadeOut();
         }
       }, (error) => {
@@ -71,24 +80,30 @@ const NotificationBanner = () => {
         fadeOut();
       });
 
-      // Clean up listener when component unmounts
-      return () => unsubscribe();
+      // Cleanup listener and timer when the component unmounts
+      return () => {
+        unsubscribe();
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+        }
+      };
     } catch (error) {
       console.error('Error setting up notification listener:', error);
     }
   }, [fadeIn, fadeOut]);
 
-  // Don't show anything if there's no notification
-  if (!notification) return null;
+  // Don't render anything if there's no notification
+  if (!notification) {
+    return null;
+  }
 
-  // Render the notification banner
   return (
     <Animated.View style={[styles.container, { opacity }]}>
       <View style={styles.contentWrapper}>
         <Text
           style={styles.text}
-          numberOfLines={1}        // Limit to single line
-          ellipsizeMode="tail"    // Add ... if text too long
+          numberOfLines={1}
+          ellipsizeMode="tail"
         >
           {notification}
         </Text>
@@ -97,36 +112,32 @@ const NotificationBanner = () => {
   );
 };
 
-// Styles for the banner
+// Styles using the centralized theme
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#3aed76',  // Purple background color
+    backgroundColor: colors.accent,
     width: '100%',
-    // Add subtle shadow effect
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
-    elevation: 3,  // Shadow for Android
+    elevation: 3,
   },
   contentWrapper: {
     paddingVertical: 8,
     paddingHorizontal: 16,
-    justifyContent: 'center',   // Center content vertically
-    alignItems: 'center',       // Center content horizontally
-    minHeight: 40,             // Minimum height of banner
-    flexDirection: 'row',      // Arrange items in a row
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: 40,
+    flexDirection: 'row',
   },
   text: {
-    color: 'white',
+    color: colors.background,
     textAlign: 'center',
     fontSize: 14,
     fontWeight: '500',
-    letterSpacing: 0.2,        // Spacing between letters
-    lineHeight: 18,           // Height of each line of text
+    letterSpacing: 0.2,
+    lineHeight: 18,
   },
 });
 
