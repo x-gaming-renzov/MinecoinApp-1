@@ -286,7 +286,7 @@ export const UserProvider = ({ children }) => {
         mcUsername: username,
         mcPassword: password,
         hasMcVerified: true,
-        coinBalance: playerBalance
+        coinBalance: user.coinBalance
       };
 
       // Only add uuid if it exists
@@ -566,7 +566,15 @@ const addBalance = useCallback(async (amount) => {
        const newBalance = currentBalance + amount;
 
     await Promise.all([
-      updateDoc(userRef, { coinBalance: newBalance }),
+      updateDoc(userRef, {
+                  coinBalance: newBalance,
+                  transactions: arrayUnion({
+                    type: "credit",
+                    amount: amount,
+                    fromUser: user.email,
+                    timestamp: Timestamp.now()
+                  })
+                }),
       mcCredentials.username && syncPlayerData(mcCredentials.username, {
         coinBalance: newBalance
       })

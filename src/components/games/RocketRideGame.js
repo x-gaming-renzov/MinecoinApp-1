@@ -113,8 +113,8 @@ const SimpleRocket = ({ position, flame, gameState }) => {
     // Simple rocket movement - only goes up
     const rocketY = position.interpolate({
         inputRange: [0, 1],
-        outputRange: [0, -SCREEN_HEIGHT * 0.6], // Simple upward movement
-        extrapolate: 'clamp'
+        outputRange: [0, -SCREEN_HEIGHT * 1.2], // Goes beyond screen
+        extrapolate: 'repeat' // Magic! Creates seamless loop
     });
 
     const flameY = position.interpolate({

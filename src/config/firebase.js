@@ -266,7 +266,90 @@ const updateMcUsername = async (email, username, password) => {
     throw error;
   }
 };
+const getGameConfig = async () => {
+  try {
+    console.log("Fetching game config...");
+    const configRef = doc(db, "appConfig", "gameConfig");
+    const configDoc = await getDoc(configRef);
 
+    if (configDoc.exists()) {
+      console.log("Game config fetched successfully");
+      return configDoc.data();
+    } else {
+      console.log("Game config not found, creating with default values...");
+
+      // Default game config structure
+      const defaultGameConfig = {
+        sections: {
+          survival: {
+            gradient: ["#059669", "#10B981"],
+            shadowColor: "#10B981",
+            borderColor: "rgba(16, 185, 129, 0.6)",
+            bgColor: "rgba(16, 185, 129, 0.15)",
+            icon: "🌲",
+            name: "SURVIVAL"
+          },
+          lifesteal: {
+            gradient: ["#EF4444", "#DC2626"],
+            shadowColor: "#EF4444",
+            borderColor: "rgba(239, 68, 68, 0.6)",
+            bgColor: "rgba(239, 68, 68, 0.15)",
+            icon: "⚔️",
+            name: "LIFESTEAL"
+          },
+          creative: {
+            gradient: ["#3B82F6", "#1D4ED8"],
+            shadowColor: "#3B82F6",
+            borderColor: "rgba(59, 130, 246, 0.6)",
+            bgColor: "rgba(59, 130, 246, 0.15)",
+            icon: "🎨",
+            name: "CREATIVE"
+          },
+          pvp: {
+            gradient: ["#F59E0B", "#D97706"],
+            shadowColor: "#F59E0B",
+            borderColor: "rgba(245, 158, 11, 0.6)",
+            bgColor: "rgba(245, 158, 11, 0.15)",
+            icon: "⚡",
+            name: "PVP"
+          },
+          skyblock: {
+            gradient: ["#8B5CF6", "#7C3AED"],
+            shadowColor: "#8B5CF6",
+            borderColor: "rgba(139, 92, 246, 0.6)",
+            bgColor: "rgba(139, 92, 246, 0.15)",
+            icon: "☁️",
+            name: "SKYBLOCK"
+          },
+          prison: {
+            gradient: ["#6B7280", "#4B5563"],
+            shadowColor: "#6B7280",
+            borderColor: "rgba(107, 114, 128, 0.6)",
+            bgColor: "rgba(107, 114, 128, 0.15)",
+            icon: "🔒",
+            name: "PRISON"
+          },
+          default: {
+            gradient: ["#059669", "#10B981"],
+            shadowColor: "#10B981",
+            borderColor: "rgba(16, 185, 129, 0.6)",
+            bgColor: "rgba(58, 237, 118, 0.15)",
+            icon: "🎮",
+            name: "GAME"
+          }
+        }
+      };
+
+      // Create the document with default values
+      await setDoc(configRef, defaultGameConfig);
+      console.log("Game config created successfully with default values");
+      return defaultGameConfig;
+    }
+  } catch (error) {
+    console.error("Error fetching/creating game config:", error);
+    throw error;
+  }
+};
 const savePurchaseHistory = async (email, purchaseDetails) => {
   try {
     console.log("Saving purchase for:", email);
@@ -361,6 +444,7 @@ export {
   signOutUser,
   saveUserToFirestore,
   fetchGameAssets,
+  getGameConfig,
   syncPlayerUserBalance,
   savePurchaseHistory,
   updateMcUsername,

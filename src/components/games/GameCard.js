@@ -14,7 +14,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import { useUser } from '../../context/UserContext';
 import InsufficientBalance from './InsufficientBalanceModal';
-import { updateUserBalance, savePurchaseHistory } from '../../config/firebase';
+import { updateUserBalance, savePurchaseHistory, getGameConfig } from '../../config/firebase';
 import { colors } from '../../screens/theme'; // Import your theme colors
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -28,13 +28,25 @@ const GameCard = ({ game, style, showSection = true }) => {
   const [purchasing, setPurchasing] = useState(false);
   const [error, setError] = useState(null);
   const [quantity, setQuantity] = useState(1);
-
+const [gameConfig, setGameConfig] = useState(null);
   // Gaming animations
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const glowAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
+  const fetchGameConfig = async () => {
+        try {
+          const config = await getGameConfig();
+          setGameConfig(config);
+        } catch (error) {
+          console.error('Error fetching game config:', error);
+          // Fallback to default config if fetch fails
+          setGameConfig(getDefaultSectionConfig());
+        }
+      };
+
+      fetchGameConfig();
     // Subtle glow animation
     Animated.loop(
       Animated.sequence([
@@ -69,69 +81,92 @@ const GameCard = ({ game, style, showSection = true }) => {
       ).start();
     }
   }, []);
+// Default fallback configuration
+  const getDefaultSectionConfig = () => ({
+    survival: {
+      gradient: [colors.accentDark, colors.accent],
+      shadowColor: colors.accent,
+      borderColor: colors.accentGlow,
+      bgColor: 'rgba(16, 185, 129, 0.15)',
+      icon: '🌲',
+      name: 'SURVIVAL',
+    },
+    lifesteal: {
+      gradient: ['#EF4444', '#DC2626'],
+      shadowColor: '#EF4444',
+      borderColor: 'rgba(239, 68, 68, 0.6)',
+      bgColor: 'rgba(239, 68, 68, 0.15)',
+      icon: '⚔️',
+      name: 'LIFESTEAL',
+    },
+    creative: {
+      gradient: [colors.primaryLight, colors.primaryDark],
+      shadowColor: colors.primary,
+      borderColor: colors.border,
+      bgColor: colors.primaryFaded,
+      icon: '🎨',
+      name: 'CREATIVE',
+    },
+    pvp: {
+      gradient: ['#F59E0B', '#D97706'],
+      shadowColor: '#F59E0B',
+      borderColor: 'rgba(245, 158, 11, 0.6)',
+      bgColor: 'rgba(245, 158, 11, 0.15)',
+      icon: '⚡',
+      name: 'PVP',
+    },
+    skyblock: {
+      gradient: ['#8B5CF6', '#7C3AED'],
+      shadowColor: '#8B5CF6',
+      borderColor: 'rgba(139, 92, 246, 0.6)',
+      bgColor: 'rgba(139, 92, 246, 0.15)',
+      icon: '☁️',
+      name: 'SKYBLOCK',
+    },
+    prison: {
+      gradient: [colors.mutedText, '#4B5563'],
+      shadowColor: colors.mutedText,
+      borderColor: 'rgba(107, 114, 128, 0.6)',
+      bgColor: 'rgba(107, 114, 128, 0.15)',
+      icon: '🔒',
+      name: 'PRISON',
+    },
+    default: {
+      gradient: [colors.accentDark, colors.accent],
+      shadowColor: colors.accent,
+      borderColor: colors.accentGlow,
+      bgColor: 'rgba(58, 237, 118, 0.15)',
+      icon: '🎮',
+      name: 'GAME',
+    },
+  });
 
-  // Gaming section configurations with theme colors
   const getSectionConfig = (section) => {
-    const configs = {
-      survival: {
-        gradient: [colors.accentDark, colors.accent],
-        shadowColor: colors.accent,
-        borderColor: colors.accentGlow,
-        bgColor: 'rgba(16, 185, 129, 0.15)',
-        icon: '🌲',
-        name: 'SURVIVAL',
-      },
-      lifesteal: {
-        gradient: ['#EF4444', '#DC2626'], // You can add these to theme if desired
-        shadowColor: '#EF4444',
-        borderColor: 'rgba(239, 68, 68, 0.6)',
-        bgColor: 'rgba(239, 68, 68, 0.15)',
-        icon: '⚔️',
-        name: 'LIFESTEAL',
-      },
-      creative: {
-        gradient: [colors.primaryLight, colors.primaryDark],
-        shadowColor: colors.primary,
-        borderColor: colors.border,
-        bgColor: colors.primaryFaded,
-        icon: '🎨',
-        name: 'CREATIVE',
-      },
-      pvp: {
-        gradient: ['#F59E0B', '#D97706'],
-        shadowColor: '#F59E0B',
-        borderColor: 'rgba(245, 158, 11, 0.6)',
-        bgColor: 'rgba(245, 158, 11, 0.15)',
-        icon: '⚡',
-        name: 'PVP',
-      },
-      skyblock: {
-        gradient: ['#8B5CF6', '#7C3AED'],
-        shadowColor: '#8B5CF6',
-        borderColor: 'rgba(139, 92, 246, 0.6)',
-        bgColor: 'rgba(139, 92, 246, 0.15)',
-        icon: '☁️',
-        name: 'SKYBLOCK',
-      },
-      prison: {
-        gradient: [colors.mutedText, '#4B5563'],
-        shadowColor: colors.mutedText,
-        borderColor: 'rgba(107, 114, 128, 0.6)',
-        bgColor: 'rgba(107, 114, 128, 0.15)',
-        icon: '🔒',
-        name: 'PRISON',
-      },
-      default: {
-        gradient: [colors.accentDark, colors.accent],
-        shadowColor: colors.accent,
-        borderColor: colors.accentGlow,
-        bgColor: 'rgba(58, 237, 118, 0.15)',
-        icon: '🎮',
-        name: 'GAME',
-      },
+      if (!gameConfig) {
+        // Return default config if gameConfig is not loaded yet
+        const defaultConfigs = getDefaultSectionConfig();
+        return defaultConfigs[section?.toLowerCase()] || defaultConfigs.default;
+      }
+
+      // Use Firestore config with fallback to default
+      const sectionKey = section?.toLowerCase();
+      const firestoreConfig = gameConfig.sections?.[sectionKey];
+
+      if (firestoreConfig) {
+        return {
+          gradient: firestoreConfig.gradient || [colors.accentDark, colors.accent],
+          shadowColor: firestoreConfig.shadowColor || colors.accent,
+          borderColor: firestoreConfig.borderColor || colors.accentGlow,
+          bgColor: firestoreConfig.bgColor || 'rgba(58, 237, 118, 0.15)',
+          icon: firestoreConfig.icon || '🎮',
+          name: firestoreConfig.name || section?.toUpperCase() || 'GAME',
+        };
+      }
+
+      // Fallback to default config
+      const defaultConfigs = getDefaultSectionConfig();
+      return defaultConfigs[sectionKey] || defaultConfigs.default;
     };
-    return configs[section?.toLowerCase()] || configs.default;
-  };
 
   const handleCardPress = () => {
     Animated.sequence([

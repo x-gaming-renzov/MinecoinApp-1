@@ -104,7 +104,7 @@ export const AuthProvider = ({ children }) => {
 
             if (toISTDate(now) !== toISTDate(lastReward)) {
               console.log("Giving daily reward");
-              const newBalance = (firestoreData.coinBalance || 0) + 20;
+              const newBalance = (firestoreData.coinBalance || 0) + 0;
               const userRef = doc(db, "users", parsedUser.email);
 
               await updateDoc(userRef, {
@@ -120,9 +120,7 @@ export const AuthProvider = ({ children }) => {
 
               if (firestoreData.mcUsername) {
                 const playerRef = doc(db, "players", firestoreData.mcUsername);
-                await updateDoc(playerRef, {
-                  coinBalance: newBalance,
-                });
+
               }
 
               console.log("Daily reward given, new balance:", newBalance);
@@ -197,7 +195,7 @@ export const AuthProvider = ({ children }) => {
         
         if (hoursSinceLastReward >= 24) {
           console.log("Giving daily reward on sign in");
-          const newBalance = (firestoreData.coinBalance || 0) + 15;
+          const newBalance = (firestoreData.coinBalance || 0) + 0;
           const userRef = doc(db, "users", userData.email);
           
           await updateDoc(userRef, {
@@ -214,9 +212,7 @@ export const AuthProvider = ({ children }) => {
           // NEW: Sync with player collection if MC verified
           if (firestoreData.mcUsername) {
             const playerRef = doc(db, "players", firestoreData.mcUsername);
-            await updateDoc(playerRef, {
-              coinBalance: newBalance
-            });
+
           }
 
           console.log("Daily reward given on sign in, new balance:", newBalance);
