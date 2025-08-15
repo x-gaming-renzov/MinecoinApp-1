@@ -10,7 +10,7 @@ const MaintenanceCheck = ({ children }) => {
   const [message, setMessage] = React.useState('');
   const [loading, setLoading] = React.useState(true);
 
-  const CURRENT_APP_VERSION = '1.0.0'; // Your app's actual version
+  const CURRENT_APP_VERSION = '1.1.4'; // Your app's actual version
 
   React.useEffect(() => {
     try {
@@ -25,21 +25,21 @@ const MaintenanceCheck = ({ children }) => {
             appVersion,
             currentAppVersion
           } = data;
-          setIsInMaintenance(false);
-//
-//          // Global maintenance mode
-//          if (isMaintenanceMode) {
-//            setIsInMaintenance(true);
-//            setMessage(message || 'App is under maintenance. Please try again later.');
-//          }
-//          // Version mismatch maintenance mode
-//          else if (appVersion !== CURRENT_APP_VERSION ) {
-//            setIsInMaintenance(true);
-//            setMessage('A new version is available or under maintenance.');
-//          }
-//          else {
-//            setIsInMaintenance(false);
-//          }
+      //   setIsInMaintenance(false);
+
+          // Global maintenance mode
+          if (isMaintenanceMode) {
+            setIsInMaintenance(true);
+            setMessage(message || 'App is under maintenance. Please try again later.');
+          }
+          // Version mismatch maintenance mode
+          else if (appVersion !== CURRENT_APP_VERSION ) {
+            setIsInMaintenance(true);
+            setMessage('A new version is available or under maintenance.');
+          }
+          else {
+            setIsInMaintenance(false);
+          }
         } else {
           setIsInMaintenance(false);
         }

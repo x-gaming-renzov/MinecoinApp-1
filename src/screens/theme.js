@@ -21,6 +21,7 @@ export const colors = {
   card: 'rgba(17, 24, 39, 0.95)',
 
   // Text
+  success: '#F3F4F6',
   text: '#F3F4F6',           // Light neutral
   lightText: '#D1D5DB',
   mutedText: '#6B7280',
