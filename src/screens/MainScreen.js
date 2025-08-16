@@ -19,6 +19,27 @@ const MainScreen = () => {
       try {
         setLoading(true);
         const assets = await fetchGameAssets();
+        // const mainscreen_experience = useNovaExperience("home");
+        // const asset_section = mainscreen_experience?.["assets-section"];
+        // const asset_section_data = asset_section?.["content"];
+        // console.log(asset_section_data);
+        // similarly for other sections
+        // const keys_section = mainscreen_experience?.["keys-section"];
+        // const keys_section_data = keys_section?.["content"];
+        // console.log(keys_section_data);
+        // const companion_section = mainscreen_experience?.["companion-section"];
+        // const companion_section_data = companion_section?.["content"];
+        // console.log(companion_section_data);
+        // const rank_section = mainscreen_experience?.["rank-section"];
+        // const rank_section_data = rank_section?.["content"];
+        // console.log(rank_section_data);
+        // const default_section = mainscreen_experience?.["default-section"];
+        // const default_section_data = default_section?.["content"];
+        // console.log(default_section_data);
+        // const ui_theme = mainscreen_experience?.["ui-theme"];
+        // const ui_theme_data = ui_theme?.["content"];
+        // console.log(ui_theme_data);
+        // const ui_theme_data = ui_theme?.["content"];
         if (assets.length === 0) {
           setError('No game assets available');
         } else {

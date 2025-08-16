@@ -1,0 +1,86 @@
+{
+    "objects": {
+        "assets-section": {
+            "type": "Level",
+            "keys": {
+                "content": {
+                    "type": "text",
+                    "description": "The content of the assets section",
+                    "default": "{\"example-id\":{\"achievementText\":\"OPest Rank\",\"createdAt\":\"5 August 2025 at 21:49:25 UTC+5:30\",\"discount\":33,\"gameType\":\"Minecraft\",\"id\":\"zQ6loxbkrLzWzIL3Ldrq\",\"imageUrl\":\"https://ik.imagekit.io/ypvwcoywn3/download%20(11).png\",\"isNew\":true,\"originalPrice\":200000,\"price\":134000,\"section\":\"Survival\",\"title\":\"Aether Lord Rank\",\"updatedAt\":\"5 August 2025 at 21:55:26 UTC+5:30\"},\"example-id-2\":{\"achievementText\":\"OPest Rank\",\"createdAt\":\"5 August 2025 at 21:49:25 UTC+5:30\",\"discount\":33,\"gameType\":\"Minecraft\",\"id\":\"zQ6loxbkrLzWzIL3Ldrq\",\"imageUrl\":\"https://ik.imagekit.io/ypvwcoywn3/download%20(11).png\",\"isNew\":true,\"originalPrice\":200000,\"price\":134000,\"section\":\"Survival\",\"title\":\"Aether Lord Rank\",\"updatedAt\":\"5 August 2025 at 21:55:26 UTC+5:30\"}}"
+                },
+                "order": {
+                    "type": "array",
+                    "description": "The order of the assets section",
+                    "default": ["example-id", "example-id-2"]
+                }
+            }
+        },
+        "keys-section": {
+            "type": "Level",
+            "keys": {
+                "content": {
+                    "type": "text",
+                    "description": "The content of the keys section",
+                    "default": "{\"example-id\":{\"achievementText\":\"OPest Rank\",\"createdAt\":\"5 August 2025 at 21:49:25 UTC+5:30\",\"discount\":33,\"gameType\":\"Minecraft\",\"id\":\"zQ6loxbkrLzWzIL3Ldrq\",\"imageUrl\":\"https://ik.imagekit.io/ypvwcoywn3/download%20(11).png\",\"isNew\":true,\"originalPrice\":200000,\"price\":134000,\"section\":\"Survival\",\"title\":\"Aether Lord Rank\",\"updatedAt\":\"5 August 2025 at 21:55:26 UTC+5:30\"}}"
+                },
+                "order": {
+                    "type": "array",
+                    "description": "The order of the keys section",
+                    "default": ["example-id", "example-id-2"]
+                }
+            }
+        },
+        "companion-section": {
+            "type": "Level",
+            "keys": {
+                "content": {
+                    "type": "text",
+                    "description": "The content of the companion section",
+                    "default": "{\"example-id\":{\"achievementText\":\"OPest Rank\",\"createdAt\":\"5 August 2025 at 21:49:25 UTC+5:30\",\"discount\":33,\"gameType\":\"Minecraft\",\"id\":\"zQ6loxbkrLzWzIL3Ldrq\",\"imageUrl\":\"https://ik.imagekit.io/ypvwcoywn3/download%20(11).png\",\"isNew\":true,\"originalPrice\":200000,\"price\":134000,\"section\":\"Survival\",\"title\":\"Aether Lord Rank\",\"updatedAt\":\"5 August 2025 at 21:55:26 UTC+5:30\"}}"
+                },
+                "order": {
+                    "type": "array",
+                    "description": "The order of the companion section",
+                    "default": ["example-id", "example-id-2"]
+                }
+            }
+        },
+        "rank-section": {
+            "type": "Level",
+            "keys": {
+                "content": {
+                    "type": "text",
+                    "description": "The content of the rank section",
+                    "default": "{\"example-id\":{\"achievementText\":\"OPest Rank\",\"createdAt\":\"5 August 2025 at 21:49:25 UTC+5:30\",\"discount\":33,\"gameType\":\"Minecraft\",\"id\":\"zQ6loxbkrLzWzIL3Ldrq\",\"imageUrl\":\"https://ik.imagekit.io/ypvwcoywn3/download%20(11).png\",\"isNew\":true,\"originalPrice\":200000,\"price\":134000,\"section\":\"Survival\",\"title\":\"Aether Lord Rank\",\"updatedAt\":\"5 August 2025 at 21:55:26 UTC+5:30\"}}"
+                },
+                "order": {
+                    "type": "array",
+                    "description": "The order of the rank section",
+                    "default": ["example-id", "example-id-2"]
+                }
+            }
+        },
+        "default-section": {
+            "type": "Level",
+            "keys": {
+                "section": {
+                    "type": "string",
+                    "description": "The section of the default section",
+                    "default": "assets"
+                }
+            }
+        }
+    },
+    "experiences": {
+        "home": {
+            "description": "Home screen",
+            "objects": {
+                "default-section": true,
+                "assets-section": true,
+                "keys-section": true,
+                "companion-section": true,
+                "rank-section": true
+            }
+        }
+    }
+}
