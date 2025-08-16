@@ -112,9 +112,12 @@ export const UserProvider = ({ children }) => {
   
             // Update user balance with player balance
            if (playerData.coinBalance !== userData.coinBalance) {
-  setBalance(playerData.coinBalance);
-}
+              setBalance(playerData.coinBalance);
+            }
 
+            // _______________________
+            // TODO : Update NovaUser here
+            // _______________________
           }
         }
       }

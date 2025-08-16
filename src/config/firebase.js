@@ -69,6 +69,9 @@ const saveUserToFirestore = async (user) => {
       mcUsername: "",
       fcmToken: user.fcmToken  // NEW: Added FCM token field
     });
+    // _______________________
+    // TODO : Set NovaUser here
+    // _______________________
     console.log("Firestore save completed");
   } catch (error) {
     console.error("Firestore save error:", error);
@@ -95,6 +98,9 @@ const getUserData = async (email) => {
   try {
     const userRef = doc(db, "users", email);
     const userDoc = await getDoc(userRef);
+    // _______________________
+    // TODO : Set NovaUser here
+    // _______________________
     if (userDoc.exists()) {
       return userDoc.data();
     }
